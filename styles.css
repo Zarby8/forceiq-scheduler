@@ -21,7 +21,7 @@ textarea{resize:vertical;min-height:120px}
 .time-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .grid .full{grid-column:1/-1}
-.questions-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.questions-grid{display:grid;grid-template-columns:1fr;gap:16px}
 .question-block{position:relative}
 .question-block label{color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:1px;font-size:11px}
 .week-nav{display:flex;align-items:center;gap:12px;margin-bottom:12px}
