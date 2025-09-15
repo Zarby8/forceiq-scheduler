@@ -1,5 +1,5 @@
 // Google Apps Script backend (working production deployment)
-const API_BASE = 'https://script.google.com/macros/s/AKfycbxIpYXTsD4hNEQ3LfgpGjnZFJNqZFQNZqLbpGbBgQE2Bg8ZJpIiKLdMpDvNJJ7B7fHh/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwYYyVTh_5voqqPHMm8mQf4S23LS9LFv-P6bALnKBkid5x0o5g5yNLMpOACfSpi4pXGFA/exec';
 
 let weekOffset = 0;
 let selectedSlot = null;
