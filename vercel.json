@@ -1,0 +1,20 @@
+{
+  "functions": {
+    "api/availability.js": {
+      "runtime": "edge"
+    },
+    "api/booking.js": {
+      "runtime": "edge"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/availability",
+      "destination": "/api/availability.js"
+    },
+    {
+      "source": "/api/booking",
+      "destination": "/api/booking.js"
+    }
+  ]
+}
