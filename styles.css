@@ -19,7 +19,7 @@ select{width:auto;min-width:150px;padding:10px 12px;background:#111;border:1px s
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--yellow);box-shadow:0 0 0 2px rgba(244,196,48,0.15)}
 textarea{resize:vertical;min-height:120px}
 .date-inputs{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
-.date-inputs select{width:100%}
+.date-inputs select{width:auto;min-width:100px}
 .time-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .time-inputs select{width:100%}
 .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
