@@ -51,7 +51,7 @@ function doPost(e) {
   return json({ error: 'unknown action' }, 400);
 }
 
-function getAvailability(weekOffset, tz) {
+function getAvailability(weekOffset, clientTz) {
   const cal = CalendarApp.getCalendarById(CONFIG.CALENDAR_ID);
   const now = new Date();
   const startOfWeek = shiftToWeekStart(now, weekOffset, CONFIG.TIMEZONE);
@@ -78,7 +78,12 @@ function getAvailability(weekOffset, tz) {
         const slotEnd = new Date(slotStart.getTime() + CONFIG.SLOT_MINUTES * 60000);
         const blocked = intersects(events, slotStart, slotEnd, CONFIG.BUFFER_MINUTES);
         if (!blocked && slotEnd <= winEnd) {
-          slots.push({ start: slotStart.getTime(), end: slotEnd.getTime(), tz: CONFIG.TIMEZONE });
+          slots.push({
+            start: slotStart.getTime(),
+            end: slotEnd.getTime(),
+            serverTz: CONFIG.TIMEZONE,
+            clientTz: clientTz || CONFIG.TIMEZONE
+          });
         }
         t = new Date(t.getTime() + CONFIG.SLOT_MINUTES * 60000);
       }
@@ -115,17 +120,19 @@ function verifySig(params) {
 
 function book(body) {
   if (!verifySig(body)) return { ok: false, error: 'invalid_signature' };
-  const { cid, name, email, phone, answers, start, end } = body;
+  const { cid, name, email, phone, answers, start, end, clientTz } = body;
   const cal = CalendarApp.getCalendarById(CONFIG.CALENDAR_ID);
   const s = new Date(start), e = new Date(end);
   const title = `ForceIQ Session – ${name}`;
-  const desc = `Client: ${name} (${email || ''}, ${phone || ''})\nCID: ${cid}\n\nAnswers:\n${formatAnswers(answers)}`;
+  const timezone = clientTz || CONFIG.TIMEZONE;
+  const desc = `Client: ${name} (${email || ''}, ${phone || ''})\nCID: ${cid}\nClient Timezone: ${timezone}\n\nAnswers:\n${formatAnswers(answers)}`;
   const event = cal.createEvent(title, s, e, { description: desc });
-  const row = [new Date(), cid, name, email, phone, s, e, JSON.stringify(answers), event.getId()];
+  const row = [new Date(), cid, name, email, phone, s, e, timezone, JSON.stringify(answers), event.getId()];
   const sheet = SpreadsheetApp.openById(CONFIG.SHEET_ID).getSheetByName('Bookings') || SpreadsheetApp.openById(CONFIG.SHEET_ID).insertSheet('Bookings');
   sheet.appendRow(row);
-  try { MailApp.sendEmail(email, 'ForceIQ Booking Confirmed', `Booked: ${s} - ${e}\n\nDetails:\n${formatAnswers(answers)}`); } catch (e) {}
-  CONFIG.OWNER_EMAILS.forEach(addr => { try { MailApp.sendEmail(addr, 'New ForceIQ Booking', `${name} booked ${s} - ${e}\n\n${formatAnswers(answers)}`); } catch (e) {} });
+  const clientTimeStr = `${s.toLocaleString('en-US', {timeZone: timezone})} - ${e.toLocaleString('en-US', {timeZone: timezone})} (${timezone})`;
+  try { MailApp.sendEmail(email, 'ForceIQ Booking Confirmed', `Booked: ${clientTimeStr}\n\nDetails:\n${formatAnswers(answers)}`); } catch (e) {}
+  CONFIG.OWNER_EMAILS.forEach(addr => { try { MailApp.sendEmail(addr, 'New ForceIQ Booking', `${name} booked ${clientTimeStr}\n\n${formatAnswers(answers)}`); } catch (e) {} });
   return { ok: true, eventId: event.getId() };
 }
 

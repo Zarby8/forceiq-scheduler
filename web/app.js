@@ -73,7 +73,8 @@ async function submitBooking(){
   if (!selectedSlot) { status.textContent = 'Please select a slot.'; return; }
   if (!answers.game || !answers.video || !answers.focus) { status.textContent = 'Please answer all required questions.'; return; }
 
-  const payload = { action:'book', cid, ts, sig, name, email, phone, answers, start: selectedSlot.start, end: selectedSlot.end };
+  const clientTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const payload = { action:'book', cid, ts, sig, name, email, phone, answers, start: selectedSlot.start, end: selectedSlot.end, clientTz };
   const res = await fetch(GAS_BASE, { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload)});
   const data = await res.json();
   if (data.ok) {
