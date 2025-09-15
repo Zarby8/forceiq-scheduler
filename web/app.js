@@ -1,5 +1,5 @@
-// Modern Vercel API endpoints
-const API_BASE = '/api';
+// Google Apps Script backend (working production deployment)
+const API_BASE = 'https://script.google.com/macros/s/AKfycbxIpYXTsD4hNEQ3LfgpGjnZFJNqZFQNZqLbpGbBgQE2Bg8ZJpIiKLdMpDvNJJ7B7fHh/exec';
 
 let weekOffset = 0;
 let selectedSlot = null;
@@ -67,7 +67,7 @@ function populateDateDropdowns() {
 
 async function loadAvailability(){
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const url = `${API_BASE}/availability?week=${weekOffset}&tz=${encodeURIComponent(tz)}`;
+  const url = `${API_BASE}?action=availability&week=${weekOffset}&tz=${encodeURIComponent(tz)}`;
   const res = await fetch(url);
   const data = await res.json();
   renderSlots(data.slots || []);
@@ -195,7 +195,7 @@ async function submitBooking(){
 
   const clientTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const payload = { action:'book', cid, ts, sig, name, email, phone, answers, start: selectedSlot.start, end: selectedSlot.end, clientTz };
-  const res = await fetch(`${API_BASE}/booking`, { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload)});
+  const res = await fetch(API_BASE, { method:'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload)});
   const data = await res.json();
   if (data.ok) {
     status.textContent = 'Booked. You will receive a confirmation email.';
