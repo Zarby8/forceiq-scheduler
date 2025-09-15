@@ -129,8 +129,9 @@ function renderSlots(slots){
     dayOrder.forEach(dayNum => {
       const slot = timeSlots[timeStr] && timeSlots[timeStr][dayNum];
       const slotEl = document.createElement('div');
+      const isWeekend = dayNum === 6 || dayNum === 0; // Saturday or Sunday
 
-      if (slot) {
+      if (slot && !isWeekend) {
         slotEl.className = 'time-slot';
         slotEl.textContent = '●';
         slotEl.setAttribute('title', `${new Date(Number(slot.start)).toLocaleDateString([], {weekday: 'short', month: 'short', day: 'numeric'})} at ${timeStr}`);
@@ -139,6 +140,10 @@ function renderSlots(slots){
           slotEl.classList.add('selected');
           selectedSlot = slot;
         });
+      } else if (isWeekend) {
+        slotEl.className = 'time-slot weekend';
+        slotEl.textContent = '×';
+        slotEl.setAttribute('title', 'Weekends unavailable');
       } else {
         slotEl.className = 'time-slot unavailable';
         slotEl.textContent = '—';

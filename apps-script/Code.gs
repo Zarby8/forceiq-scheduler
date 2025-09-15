@@ -17,8 +17,8 @@ const CONFIG = {
     3: [['17:00', '20:00']],
     4: [['17:00', '20:00']],
     5: [['10:00', '13:00']],
-    6: [],                    // Saturday
-    0: [['10:00', '14:00']], // Sunday
+    6: [],                    // Saturday - DISABLED
+    0: [],                    // Sunday - DISABLED
   },
   ORIGIN_ALLOWED: ['https://forcehockeyiq.com', 'https://schedule.forcehockeyiq.com'],
   HMAC_SECRET: 'pV8DO3RPkJz/ZIWKtOCldVsgvdg9JKmbtebKzbQGYSM=',
