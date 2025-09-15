@@ -20,8 +20,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--yellow);
 textarea{resize:vertical;min-height:120px}
 .date-inputs{display:flex;gap:8px;align-items:center}
 .date-inputs select{width:auto;min-width:100px}
-.time-inputs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.time-inputs select{width:100%}
+.time-inputs{display:flex;gap:8px;align-items:center}
+.time-inputs input{width:200px}
+.time-inputs select{width:auto;min-width:150px}
 .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .grid .full{grid-column:1/-1}
 .questions-grid{display:grid;grid-template-columns:1fr;gap:16px}
