@@ -74,12 +74,12 @@ async function loadAvailability(){
 }
 
 function renderSlots(slots){
-  const cont = document.getElementById('timeSlots');
-  cont.innerHTML = '';
+  const tbody = document.getElementById('timeSlots');
+  tbody.innerHTML = '';
   selectedSlot = null;
 
   if (!slots.length){
-    cont.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px;">No slots available in this window.</div>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--muted); padding: 40px;">No slots available in this window.</td></tr>';
     return;
   }
 
@@ -88,7 +88,7 @@ function renderSlots(slots){
   const last = new Date(Number(slots[slots.length-1].end));
   document.getElementById('weekLabel').textContent = `${first.toLocaleDateString()} – ${last.toLocaleDateString()}`;
 
-  // Create calendar grid structure
+  // Create calendar structure
   const timeSlots = {};
   const times = new Set();
 
@@ -116,18 +116,21 @@ function renderSlots(slots){
     return aHour24 * 60 + aMin - (bHour24 * 60 + bMin);
   });
 
-  // Render grid
+  // Render table rows
   sortedTimes.forEach(timeStr => {
-    // Time label
-    const timeLabel = document.createElement('div');
-    timeLabel.className = 'time-label';
-    timeLabel.textContent = timeStr;
-    cont.appendChild(timeLabel);
+    const row = document.createElement('tr');
+
+    // Time label cell
+    const timeCell = document.createElement('td');
+    timeCell.className = 'time-label';
+    timeCell.textContent = timeStr;
+    row.appendChild(timeCell);
 
     // Days of week (Mon=1, Tue=2, ..., Sun=0)
     const dayOrder = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sun
     dayOrder.forEach(dayNum => {
       const slot = timeSlots[timeStr] && timeSlots[timeStr][dayNum];
+      const cell = document.createElement('td');
       const slotEl = document.createElement('div');
       const isWeekend = dayNum === 6 || dayNum === 0; // Saturday or Sunday
 
@@ -149,8 +152,11 @@ function renderSlots(slots){
         slotEl.textContent = '—';
       }
 
-      cont.appendChild(slotEl);
+      cell.appendChild(slotEl);
+      row.appendChild(cell);
     });
+
+    tbody.appendChild(row);
   });
 }
 

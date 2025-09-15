@@ -44,17 +44,22 @@
           <button id="nextWeek">Next Week ▶</button>
         </div>
         <div id="calendar" class="calendar-container">
-          <div class="calendar-header">
-            <div class="day-header">Time</div>
-            <div class="day-header">Mon</div>
-            <div class="day-header">Tue</div>
-            <div class="day-header">Wed</div>
-            <div class="day-header">Thu</div>
-            <div class="day-header">Fri</div>
-            <div class="day-header weekend">Sat</div>
-            <div class="day-header weekend">Sun</div>
-          </div>
-          <div id="timeSlots" class="time-slots-grid"></div>
+          <table class="calendar-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Sat</th>
+                <th>Sun</th>
+              </tr>
+            </thead>
+            <tbody id="timeSlots">
+            </tbody>
+          </table>
         </div>
         <div id="slots" class="slots" style="display: none;"></div>
       </section>
