@@ -17,6 +17,9 @@ input{width:100%;padding:10px 12px;background:#111;border:1px solid #222;border-
 input:focus{outline:none;border-color:var(--yellow);box-shadow:0 0 0 2px rgba(244,196,48,0.15)}
 .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
 .grid .full{grid-column:1/-1}
+.questions-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.question-block{position:relative}
+.question-block label{color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:1px;font-size:11px}
 .week-nav{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .week-nav button{background:#111;color:var(--text);border:1px solid #222;border-radius:8px;padding:8px 12px;cursor:pointer;transition:all 0.2s ease}
 .week-nav button:hover{border-color:var(--yellow);box-shadow:0 0 6px rgba(244,196,48,0.15);transform:translateY(-1px);transition:all 0.2s ease}
