@@ -20,6 +20,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('nextWeek').addEventListener('click', () => { weekOffset += 1; loadAvailability(); });
   document.getElementById('submit').addEventListener('click', submitBooking);
 
+  // Handle source dropdown conditional input
+  document.getElementById('q_source').addEventListener('change', (e) => {
+    const otherContainer = document.getElementById('source-other-container');
+    if (e.target.value === 'Other') {
+      otherContainer.style.display = 'block';
+    } else {
+      otherContainer.style.display = 'none';
+      document.getElementById('q_source_other').value = '';
+    }
+  });
+
   populateDateDropdowns();
   loadAvailability();
 });
@@ -147,6 +158,10 @@ async function submitBooking(){
 
   // Collect new form data
   const gameDate = `${document.getElementById('q_month').value}/${document.getElementById('q_day').value}/${document.getElementById('q_year').value}`;
+  const sourceValue = document.getElementById('q_source').value;
+  const sourceOther = document.getElementById('q_source_other').value.trim();
+  const finalSource = sourceValue === 'Other' ? sourceOther : sourceValue;
+
   const answers = {
     game: document.getElementById('q_game').value.trim(),
     date: gameDate,
@@ -156,13 +171,20 @@ async function submitBooking(){
     performance: document.getElementById('q_performance').value.trim(),
     rating: document.getElementById('q_rating').value,
     events: document.getElementById('q_events').value.trim(),
+    source: finalSource,
   };
 
   if (!cid || !ts || !sig) { status.textContent = 'Invalid link. Please contact ForceIQ.'; return; }
   if (!name || !email) { status.textContent = 'Name and email are required.'; return; }
   if (!selectedSlot) { status.textContent = 'Please select a slot.'; return; }
-  if (!answers.game || !answers.time || !answers.focus || !answers.performance || !answers.rating) {
+  if (!answers.game || !answers.time || !answers.focus || !answers.performance || !answers.rating || !answers.source) {
     status.textContent = 'Please answer all required questions.';
+    return;
+  }
+
+  // Validate "Other" source has text
+  if (sourceValue === 'Other' && !sourceOther) {
+    status.textContent = 'Please specify the source when "Other" is selected.';
     return;
   }
 

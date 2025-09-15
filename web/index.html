@@ -129,6 +129,23 @@
             <label>Events (Optional)</label>
             <textarea id="q_events" placeholder="Is there anything I should know that happened? (ie You got sat, not on the PP, coach changed lines)" rows="2"></textarea>
           </div>
+          <div class="question-block">
+            <label>Source</label>
+            <select id="q_source">
+              <option value="">Select source...</option>
+              <option value="Livebarn">Livebarn</option>
+              <option value="YouTube">YouTube</option>
+              <option value="InStat">InStat</option>
+              <option value="SportLogiq">SportLogiq</option>
+              <option value="Hudl">Hudl</option>
+              <option value="TPE">TPE</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="question-block" id="source-other-container" style="display: none;">
+            <label>Other Source</label>
+            <input id="q_source_other" placeholder="Please specify the source" />
+          </div>
         </div>
       </section>
 
