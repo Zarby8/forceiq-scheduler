@@ -45,9 +45,9 @@ textarea{resize:vertical;min-height:120px}
 
 /* Calendar-style time slot layout */
 .calendar-container{background:#0f0f0f;border:1px solid #333;border-radius:12px;padding:16px;margin-top:8px}
-.calendar-header{display:grid;grid-template-columns:80px repeat(7,1fr);gap:8px;margin-bottom:12px}
+.calendar-header{display:grid;grid-template-columns:80px repeat(7,1fr);gap:8px;margin-bottom:8px}
 .day-header{background:var(--card);color:var(--yellow);text-align:center;padding:8px 4px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:6px;font-family:'Geist',system-ui}
-.time-slots-grid{display:grid;grid-template-columns:80px repeat(7,1fr);gap:8px;row-gap:4px}
+.time-slots-grid{display:grid;grid-template-columns:80px repeat(7,1fr);gap:8px;row-gap:4px;align-items:start}
 .time-label{color:var(--muted);font-size:11px;font-weight:600;text-align:right;padding:8px 8px 8px 0;font-family:'Geist Mono',monospace;display:flex;align-items:center;justify-content:flex-end}
 .time-slot{background:linear-gradient(145deg,#1a1a1a,#111);border:1px solid #333;border-radius:6px;padding:6px;cursor:pointer;transition:all 0.2s ease;font-size:10px;text-align:center;color:var(--text);min-height:32px;display:flex;align-items:center;justify-content:center;position:relative}
 .time-slot:hover{border-color:var(--yellow);background:linear-gradient(145deg,#252525,#1a1a1a);transform:translateY(-1px);box-shadow:0 4px 12px rgba(244,196,48,0.25)}
