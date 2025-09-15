@@ -5,9 +5,9 @@ import SwiftUI
 enum AppConfig {
     // Base URL of your booking site (used only for user display) e.g. https://schedule.forcehockeyiq.com
     static let WEB_BASE = URL(string: "https://schedule.forcehockeyiq.com")!
-    // Base URL of your Apps Script deployment (ends with /exec)
-    static let GAS_BASE = URL(string: "https://script.google.com/macros/s/AKfycbwYYyVTh_5voqqPHMm8mQf4S23LS9LFv-P6bALnKBkid5x0o5g5yNLMpOACfSpi4pXGFA/exec")!
-    // Secret shared between app and Apps Script for signing links
+    // Base URL of your Vercel API deployment
+    static let API_BASE = URL(string: "https://schedule.forcehockeyiq.com/api")!
+    // Secret shared between app and Vercel API for signing links
     static let HMAC_SECRET = "pV8DO3RPkJz/ZIWKtOCldVsgvdg9JKmbtebKzbQGYSM="
     // Apple Events permission string (Info.plist also needs NSAppleEventsUsageDescription)
     static let appleEventsPurpose = "Used to send weekly scheduling messages via Messages."
