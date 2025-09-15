@@ -6,8 +6,9 @@
     <title>ForceIQ – Schedule</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Racing+Sans+One&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.cdnfonts.com/css/fty-speedy-casual" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -38,11 +39,24 @@
       <section class="card">
         <h2>Pick a Slot</h2>
         <div class="week-nav">
-          <button id="prevWeek">◀ Prev</button>
+          <button id="prevWeek">◀ Prev Week</button>
           <div id="weekLabel"></div>
-          <button id="nextWeek">Next ▶</button>
+          <button id="nextWeek">Next Week ▶</button>
         </div>
-        <div id="slots" class="slots"></div>
+        <div id="calendar" class="calendar-container">
+          <div class="calendar-header">
+            <div class="day-header">Time</div>
+            <div class="day-header">Mon</div>
+            <div class="day-header">Tue</div>
+            <div class="day-header">Wed</div>
+            <div class="day-header">Thu</div>
+            <div class="day-header">Fri</div>
+            <div class="day-header">Sat</div>
+            <div class="day-header">Sun</div>
+          </div>
+          <div id="timeSlots" class="time-slots-grid"></div>
+        </div>
+        <div id="slots" class="slots" style="display: none;"></div>
       </section>
 
       <section class="card">

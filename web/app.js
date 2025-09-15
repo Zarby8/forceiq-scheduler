@@ -63,27 +63,78 @@ async function loadAvailability(){
 }
 
 function renderSlots(slots){
-  const cont = document.getElementById('slots');
+  const cont = document.getElementById('timeSlots');
   cont.innerHTML = '';
   selectedSlot = null;
-  const fmt = (t) => new Date(Number(t)).toLocaleString([], {hour:'2-digit', minute:'2-digit', weekday:'short', month:'short', day:'numeric'});
+
   if (!slots.length){
-    cont.textContent = 'No slots available in this window.';
+    cont.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px;">No slots available in this window.</div>';
     return;
   }
+
+  // Set week label
   const first = new Date(Number(slots[0].start));
   const last = new Date(Number(slots[slots.length-1].end));
   document.getElementById('weekLabel').textContent = `${first.toLocaleDateString()} – ${last.toLocaleDateString()}`;
+
+  // Create calendar grid structure
+  const timeSlots = {};
+  const times = new Set();
+
+  // Organize slots by day and time
   slots.forEach(s => {
-    const btn = document.createElement('button');
-    btn.className = 'slot';
-    btn.textContent = `${fmt(s.start)} → ${fmt(s.end)}`;
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.slot').forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-      selectedSlot = s;
+    const start = new Date(Number(s.start));
+    const dayOfWeek = start.getDay(); // 0=Sun, 1=Mon, etc.
+    const timeStr = start.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', hour12: true});
+
+    if (!timeSlots[timeStr]) timeSlots[timeStr] = {};
+    timeSlots[timeStr][dayOfWeek] = s;
+    times.add(timeStr);
+  });
+
+  // Sort times
+  const sortedTimes = Array.from(times).sort((a, b) => {
+    const [aTime, aPeriod] = a.split(' ');
+    const [bTime, bPeriod] = b.split(' ');
+    const [aHour, aMin] = aTime.split(':').map(Number);
+    const [bHour, bMin] = bTime.split(':').map(Number);
+
+    const aHour24 = aPeriod === 'PM' && aHour !== 12 ? aHour + 12 : (aPeriod === 'AM' && aHour === 12 ? 0 : aHour);
+    const bHour24 = bPeriod === 'PM' && bHour !== 12 ? bHour + 12 : (bPeriod === 'AM' && bHour === 12 ? 0 : bHour);
+
+    return aHour24 * 60 + aMin - (bHour24 * 60 + bMin);
+  });
+
+  // Render grid
+  sortedTimes.forEach(timeStr => {
+    // Time label
+    const timeLabel = document.createElement('div');
+    timeLabel.className = 'time-label';
+    timeLabel.textContent = timeStr;
+    cont.appendChild(timeLabel);
+
+    // Days of week (Mon=1, Tue=2, ..., Sun=0)
+    const dayOrder = [1, 2, 3, 4, 5, 6, 0]; // Mon-Sun
+    dayOrder.forEach(dayNum => {
+      const slot = timeSlots[timeStr] && timeSlots[timeStr][dayNum];
+      const slotEl = document.createElement('div');
+
+      if (slot) {
+        slotEl.className = 'time-slot';
+        slotEl.textContent = '●';
+        slotEl.setAttribute('title', `${new Date(Number(slot.start)).toLocaleDateString([], {weekday: 'short', month: 'short', day: 'numeric'})} at ${timeStr}`);
+        slotEl.addEventListener('click', () => {
+          document.querySelectorAll('.time-slot.selected').forEach(b => b.classList.remove('selected'));
+          slotEl.classList.add('selected');
+          selectedSlot = slot;
+        });
+      } else {
+        slotEl.className = 'time-slot unavailable';
+        slotEl.textContent = '—';
+      }
+
+      cont.appendChild(slotEl);
     });
-    cont.appendChild(btn);
   });
 }
 
