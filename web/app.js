@@ -20,8 +20,39 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('nextWeek').addEventListener('click', () => { weekOffset += 1; loadAvailability(); });
   document.getElementById('submit').addEventListener('click', submitBooking);
 
+  populateDateDropdowns();
   loadAvailability();
 });
+
+function populateDateDropdowns() {
+  const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentDay = now.getDate();
+  const currentYear = now.getFullYear();
+
+  // Populate days (1-31)
+  const daySelect = document.getElementById('q_day');
+  for (let i = 1; i <= 31; i++) {
+    const option = document.createElement('option');
+    option.value = i;
+    option.textContent = i;
+    if (i === currentDay) option.selected = true;
+    daySelect.appendChild(option);
+  }
+
+  // Populate years (current year - 1 to current year)
+  const yearSelect = document.getElementById('q_year');
+  for (let i = currentYear - 1; i <= currentYear; i++) {
+    const option = document.createElement('option');
+    option.value = i;
+    option.textContent = i;
+    if (i === currentYear) option.selected = true;
+    yearSelect.appendChild(option);
+  }
+
+  // Set current month as selected
+  document.getElementById('q_month').value = currentMonth;
+}
 
 async function loadAvailability(){
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -62,16 +93,27 @@ async function submitBooking(){
   const name = document.getElementById('name').value.trim();
   const email = document.getElementById('email').value.trim();
   const phone = document.getElementById('phone').value.trim();
+
+  // Collect new form data
+  const gameDate = `${document.getElementById('q_month').value}/${document.getElementById('q_day').value}/${document.getElementById('q_year').value}`;
   const answers = {
     game: document.getElementById('q_game').value.trim(),
-    video: document.getElementById('q_video').value.trim(),
+    date: gameDate,
+    time: document.getElementById('q_time').value.trim(),
+    timezone: document.getElementById('q_timezone').value,
     focus: document.getElementById('q_focus').value.trim(),
-    constraints: document.getElementById('q_constraints').value.trim(),
+    performance: document.getElementById('q_performance').value.trim(),
+    rating: document.getElementById('q_rating').value,
+    events: document.getElementById('q_events').value.trim(),
   };
+
   if (!cid || !ts || !sig) { status.textContent = 'Invalid link. Please contact ForceIQ.'; return; }
   if (!name || !email) { status.textContent = 'Name and email are required.'; return; }
   if (!selectedSlot) { status.textContent = 'Please select a slot.'; return; }
-  if (!answers.game || !answers.video || !answers.focus) { status.textContent = 'Please answer all required questions.'; return; }
+  if (!answers.game || !answers.time || !answers.focus || !answers.performance || !answers.rating) {
+    status.textContent = 'Please answer all required questions.';
+    return;
+  }
 
   const clientTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const payload = { action:'book', cid, ts, sig, name, email, phone, answers, start: selectedSlot.start, end: selectedSlot.end, clientTz };
