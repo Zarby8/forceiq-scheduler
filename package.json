@@ -4,8 +4,7 @@
   "description": "Modern scheduling system for ForceIQ hockey training sessions",
   "main": "index.js",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "vercel build"
+    "dev": "vercel dev"
   },
   "dependencies": {
     "jose": "^5.1.3"
