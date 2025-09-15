@@ -4,7 +4,7 @@ import Security
 
 public class AppConfig: ObservableObject {
     @Published public var webBase: String = "https://schedule.forcehockeyiq.com"
-    @Published public var gasBase: String = "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec"
+    @Published public var gasBase: String = "https://script.google.com/macros/s/AKfycbwYYyVTh_5voqqPHMm8mQf4S23LS9LFv-P6bALnKBkid5x0o5g5yNLMpOACfSpi4pXGFA/exec"
     @Published public var hmacSecret: String = ""
     @Published public var googleAccessToken: String = ""
     @Published public var googleRefreshToken: String = ""
@@ -57,7 +57,7 @@ public class AppConfig: ObservableObject {
     }
 
     public var gasBaseURL: URL {
-        return URL(string: gasBase) ?? URL(string: "https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec")!
+        return URL(string: gasBase) ?? URL(string: "https://script.google.com/macros/s/AKfycbwYYyVTh_5voqqPHMm8mQf4S23LS9LFv-P6bALnKBkid5x0o5g5yNLMpOACfSpi4pXGFA/exec")!
     }
 
     private func generateRandomSecret() -> String {

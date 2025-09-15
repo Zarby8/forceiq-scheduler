@@ -6,7 +6,7 @@ enum AppConfig {
     // Base URL of your booking site (used only for user display) e.g. https://schedule.forcehockeyiq.com
     static let WEB_BASE = URL(string: "https://schedule.forcehockeyiq.com")!
     // Base URL of your Apps Script deployment (ends with /exec)
-    static let GAS_BASE = URL(string: "https://SCRIPT_ID_HERE.script.google.com/macros/s/DEPLOYMENT_ID/exec")!
+    static let GAS_BASE = URL(string: "https://script.google.com/macros/s/AKfycbwYYyVTh_5voqqPHMm8mQf4S23LS9LFv-P6bALnKBkid5x0o5g5yNLMpOACfSpi4pXGFA/exec")!
     // Secret shared between app and Apps Script for signing links
     static let HMAC_SECRET = "CHANGE_ME_TO_RANDOM_32+_CHARS"
     // Apple Events permission string (Info.plist also needs NSAppleEventsUsageDescription)
