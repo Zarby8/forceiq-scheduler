@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ForceIQ – Schedule</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>FORCEIQ SCHEDULER</h1>
+        <div class="tag">Electric analytics. Precision scheduling.</div>
+      </header>
+
+      <section class="card">
+        <div id="welcome"></div>
+        <div class="grid">
+          <div>
+            <label>Full Name</label>
+            <input id="name" placeholder="Jane Appleseed" />
+          </div>
+          <div>
+            <label>Email</label>
+            <input id="email" placeholder="jane@example.com" />
+          </div>
+          <div>
+            <label>Phone (optional)</label>
+            <input id="phone" placeholder="+1 555 123 4567" />
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Pick a Slot</h2>
+        <div class="week-nav">
+          <button id="prevWeek">◀ Prev</button>
+          <div id="weekLabel"></div>
+          <button id="nextWeek">Next ▶</button>
+        </div>
+        <div id="slots" class="slots"></div>
+      </section>
+
+      <section class="card">
+        <h2>Required Questions</h2>
+        <div class="grid">
+          <div class="full">
+            <label>Which game do you want me to analyze? Include date, opponent, and competition.</label>
+            <input id="q_game" placeholder="2025-01-15 vs Falcons (U18 AAA)" />
+          </div>
+          <div class="full">
+            <label>Video link (YouTube, Hudl, Drive)</label>
+            <input id="q_video" placeholder="https://..." />
+          </div>
+          <div class="full">
+            <label>Primary focus areas</label>
+            <input id="q_focus" placeholder="e.g., deception forehand, edgework under pressure" />
+          </div>
+          <div class="full">
+            <label>Constraints or notes</label>
+            <input id="q_constraints" placeholder="Travel schedule, injuries, etc." />
+          </div>
+        </div>
+      </section>
+
+      <section class="card actions">
+        <button id="submit" class="cta">Confirm Booking</button>
+        <div id="status" class="status"></div>
+      </section>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+  </html>
+
