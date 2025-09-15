@@ -21,7 +21,7 @@ const CONFIG = {
     0: [['10:00', '14:00']], // Sunday
   },
   ORIGIN_ALLOWED: ['https://forcehockeyiq.com', 'https://schedule.forcehockeyiq.com'],
-  HMAC_SECRET: 'CHANGE_ME_TO_RANDOM_32+_CHARS',
+  HMAC_SECRET: 'pV8DO3RPkJz/ZIWKtOCldVsgvdg9JKmbtebKzbQGYSM=',
   OWNER_EMAILS: ['chris@forcehockeyiq.com', 'shaneb@forcehockeyiq.com'],
 };
 

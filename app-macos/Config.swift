@@ -8,7 +8,7 @@ enum AppConfig {
     // Base URL of your Apps Script deployment (ends with /exec)
     static let GAS_BASE = URL(string: "https://script.google.com/macros/s/AKfycbwYYyVTh_5voqqPHMm8mQf4S23LS9LFv-P6bALnKBkid5x0o5g5yNLMpOACfSpi4pXGFA/exec")!
     // Secret shared between app and Apps Script for signing links
-    static let HMAC_SECRET = "CHANGE_ME_TO_RANDOM_32+_CHARS"
+    static let HMAC_SECRET = "pV8DO3RPkJz/ZIWKtOCldVsgvdg9JKmbtebKzbQGYSM="
     // Apple Events permission string (Info.plist also needs NSAppleEventsUsageDescription)
     static let appleEventsPurpose = "Used to send weekly scheduling messages via Messages."
 }
