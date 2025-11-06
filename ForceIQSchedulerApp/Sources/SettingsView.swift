@@ -7,7 +7,9 @@ struct SettingsView: View {
     @State private var sendTime: Date = Date()
     @State private var messageTemplate: String = ""
     @State private var bookingPageUrl: String = ""
+    @State private var adminToken: String = ""
     @State private var showingTestMessage = false
+    @State private var tokenSaveStatus: String = ""
 
     var body: some View {
         ScrollView {
@@ -128,6 +130,43 @@ struct SettingsView: View {
                 .padding(20)
                 .forceIQCard(level: 1)
 
+                // Admin Token Configuration
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("API AUTHENTICATION")
+                        .font(.system(size: 12, weight: .black, design: .default))
+                        .tracking(2)
+                        .foregroundColor(ForceIQColors.highlightYellow)
+
+                    Text("Enter your admin token to enable API access. This token must match the ADMIN_TOKEN in your Vercel environment variables.")
+                        .font(.system(size: 11, weight: .regular, design: .default))
+                        .foregroundColor(ForceIQColors.textSecondary)
+                        .lineSpacing(4)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("ADMIN TOKEN")
+                            .font(.system(size: 11, weight: .bold, design: .default))
+                            .tracking(1.5)
+                            .foregroundColor(ForceIQColors.textMuted)
+
+                        SecureField("Paste your admin token here", text: $adminToken)
+                            .textFieldStyle(ForceIQTextFieldStyle())
+                    }
+
+                    if !tokenSaveStatus.isEmpty {
+                        Text(tokenSaveStatus)
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .foregroundColor(tokenSaveStatus.contains("✅") ? ForceIQColors.electricGreen : ForceIQColors.forceRed)
+                    }
+
+                    Button(action: saveAdminToken) {
+                        Label("Save Token to Keychain", systemImage: "lock.fill")
+                    }
+                    .buttonStyle(ForceIQButtonStyle(type: .primary))
+                    .disabled(adminToken.isEmpty)
+                }
+                .padding(20)
+                .forceIQCard(level: 1)
+
                 // Coach Configuration
                 VStack(alignment: .leading, spacing: 16) {
                     Text("COACHES")
@@ -185,6 +224,21 @@ struct SettingsView: View {
         sendTime = appModel.config.sundayConfig.sendTime
         messageTemplate = appModel.config.sundayConfig.messageTemplate
         bookingPageUrl = appModel.config.bookingPageUrl
+
+        if let savedToken = KeychainManager.shared.getAdminToken() {
+            adminToken = String(repeating: "•", count: 20)
+            tokenSaveStatus = "✅ Token saved in Keychain"
+        }
+    }
+
+    private func saveAdminToken() {
+        KeychainManager.shared.saveAdminToken(adminToken)
+        tokenSaveStatus = "✅ Token saved securely in Keychain"
+        adminToken = String(repeating: "•", count: 20)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            tokenSaveStatus = ""
+        }
     }
 
     private func sendTestMessage() {

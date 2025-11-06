@@ -24,6 +24,7 @@ class AppModel: ObservableObject {
     enum Tab: String, CaseIterable {
         case dashboard = "Dashboard"
         case clients = "Clients"
+        case booking = "Book Session"
         case availability = "Availability"
         case settings = "Settings"
 
@@ -31,6 +32,7 @@ class AppModel: ObservableObject {
             switch self {
             case .dashboard: return "chart.bar.fill"
             case .clients: return "person.3.fill"
+            case .booking: return "calendar.badge.plus"
             case .availability: return "calendar.badge.clock"
             case .settings: return "gearshape.fill"
             }
@@ -97,6 +99,11 @@ class AppModel: ObservableObject {
     private func syncCoachAvailability(_ coach: Coach) async {
         let apiUrl = "\(config.apiBaseUrl)/update-availability"
 
+        guard let adminToken = KeychainManager.shared.getAdminToken() else {
+            print("❌ Admin token not found in Keychain")
+            return
+        }
+
         // Convert WeeklySchedule to API format (0-6 integer keys)
         let apiSchedule: [Int: [[String: String]]] = [
             0: coach.weeklyHours.sunday.map { ["start": $0.start, "end": $0.end] },
@@ -111,7 +118,7 @@ class AppModel: ObservableObject {
         let payload: [String: Any] = [
             "coachId": coach.id,
             "weeklyHours": apiSchedule,
-            "adminToken": "XXMiwoyrVpkuCg4EX5oa0Bw2QYDMMSpR"
+            "adminToken": adminToken
         ]
 
         guard let url = URL(string: apiUrl),
@@ -205,6 +212,11 @@ class AppModel: ObservableObject {
         isLoadingBookings = true
         defer { isLoadingBookings = false }
 
+        guard let adminToken = KeychainManager.shared.getAdminToken() else {
+            print("❌ Admin token not found in Keychain")
+            return
+        }
+
         let apiUrl = "\(config.apiBaseUrl)/bookings"
 
         guard let url = URL(string: apiUrl) else {
@@ -214,7 +226,7 @@ class AppModel: ObservableObject {
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue("Bearer XXMiwoyrVpkuCg4EX5oa0Bw2QYDMMSpR", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(adminToken)", forHTTPHeaderField: "Authorization")
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
