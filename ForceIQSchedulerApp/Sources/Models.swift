@@ -200,10 +200,10 @@ struct AppConfig: Codable {
     var sundayConfig: SundaySendConfig
 
     static let `default` = AppConfig(
-        bookingPageUrl: "https://schedule.forcehockeyiq.com",
-        apiBaseUrl: "https://schedule.forcehockeyiq.com/api",
+        bookingPageUrl: "https://forceiq-scheduler-5rwqhhy2r-chris-projects-3ac5714d.vercel.app",
+        apiBaseUrl: "https://forceiq-scheduler-5rwqhhy2r-chris-projects-3ac5714d.vercel.app/api",
         coaches: [
-            Coach(id: "coach1", name: "Chris", email: "chris@forcehockeyiq.com", bio: "Lead Coach & Analytics Expert", color: "#F4C430"),
+            Coach(id: "coach1", name: "Chris Zarb", email: "chris@forcehockeyiq.com", bio: "Lead Coach & Analytics Expert", color: "#F4C430"),
             Coach(id: "coach2", name: "Shane", email: "shaneb@forcehockeyiq.com", bio: "Performance Coach", color: "#4FFF4F")
         ],
         sundayConfig: SundaySendConfig()

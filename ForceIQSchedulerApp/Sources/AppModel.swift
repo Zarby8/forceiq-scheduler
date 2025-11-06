@@ -84,6 +84,60 @@ class AppModel: ObservableObject {
         if let index = config.coaches.firstIndex(where: { $0.id == coach.id }) {
             config.coaches[index] = coach
             storage.saveConfig(config)
+
+            // Sync availability to Vercel
+            Task {
+                await syncCoachAvailability(coach)
+            }
+        }
+    }
+
+    // MARK: - Vercel Sync
+
+    private func syncCoachAvailability(_ coach: Coach) async {
+        let apiUrl = "\(config.apiBaseUrl)/update-availability"
+
+        // Convert WeeklySchedule to API format (0-6 integer keys)
+        let apiSchedule: [Int: [[String: String]]] = [
+            0: coach.weeklyHours.sunday.map { ["start": $0.start, "end": $0.end] },
+            1: coach.weeklyHours.monday.map { ["start": $0.start, "end": $0.end] },
+            2: coach.weeklyHours.tuesday.map { ["start": $0.start, "end": $0.end] },
+            3: coach.weeklyHours.wednesday.map { ["start": $0.start, "end": $0.end] },
+            4: coach.weeklyHours.thursday.map { ["start": $0.start, "end": $0.end] },
+            5: coach.weeklyHours.friday.map { ["start": $0.start, "end": $0.end] },
+            6: coach.weeklyHours.saturday.map { ["start": $0.start, "end": $0.end] }
+        ]
+
+        let payload: [String: Any] = [
+            "coachId": coach.id,
+            "weeklyHours": apiSchedule,
+            "adminToken": "XXMiwoyrVpkuCg4EX5oa0Bw2QYDMMSpR"
+        ]
+
+        guard let url = URL(string: apiUrl),
+              let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
+            print("❌ Failed to create sync request")
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                print("✅ Synced availability for \(coach.name) to Vercel")
+            } else {
+                print("❌ Failed to sync availability: HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+                if let responseText = String(data: data, encoding: .utf8) {
+                    print("Response: \(responseText)")
+                }
+            }
+        } catch {
+            print("❌ Error syncing availability: \(error.localizedDescription)")
         }
     }
 

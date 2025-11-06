@@ -1,5 +1,6 @@
 // Google Calendar API helper
 import { google } from 'googleapis';
+import { kv } from '@vercel/kv';
 import type { Coach, TimeSlot, WeeklySchedule } from '../../shared/types';
 
 const SLOT_MINUTES = 60;
@@ -21,13 +22,14 @@ export function getCalendarClient() {
 }
 
 /**
- * Get coach configuration from environment variables
+ * Get coach configuration from environment variables + KV storage
  */
-export function getCoaches(): Coach[] {
+export async function getCoaches(): Promise<Coach[]> {
   const coaches: Coach[] = [];
 
   // Coach 1
   if (process.env.COACH_1_CALENDAR_ID) {
+    const weeklyHours = await getCoachAvailability('coach1');
     coaches.push({
       id: 'coach1',
       name: process.env.COACH_1_NAME || 'Coach 1',
@@ -35,13 +37,14 @@ export function getCoaches(): Coach[] {
       calendarId: process.env.COACH_1_CALENDAR_ID,
       photoUrl: process.env.COACH_1_PHOTO_URL,
       bio: process.env.COACH_1_BIO,
-      weeklyHours: parseWeeklyHours(process.env.COACH_1_WEEKLY_HOURS),
+      weeklyHours,
       color: process.env.COACH_1_COLOR || '#F4C430',
     });
   }
 
   // Coach 2
   if (process.env.COACH_2_CALENDAR_ID) {
+    const weeklyHours = await getCoachAvailability('coach2');
     coaches.push({
       id: 'coach2',
       name: process.env.COACH_2_NAME || 'Coach 2',
@@ -49,12 +52,36 @@ export function getCoaches(): Coach[] {
       calendarId: process.env.COACH_2_CALENDAR_ID,
       photoUrl: process.env.COACH_2_PHOTO_URL,
       bio: process.env.COACH_2_BIO,
-      weeklyHours: parseWeeklyHours(process.env.COACH_2_WEEKLY_HOURS),
+      weeklyHours,
       color: process.env.COACH_2_COLOR || '#4FFF4F',
     });
   }
 
   return coaches;
+}
+
+/**
+ * Get coach availability from KV storage
+ */
+async function getCoachAvailability(coachId: string): Promise<WeeklySchedule> {
+  const defaultSchedule: WeeklySchedule = {
+    0: [], // Sunday
+    1: [], // Monday
+    2: [], // Tuesday
+    3: [], // Wednesday
+    4: [], // Thursday
+    5: [], // Friday
+    6: [], // Saturday
+  };
+
+  try {
+    const kvKey = `availability:${coachId}`;
+    const stored = await kv.get<WeeklySchedule>(kvKey);
+    return stored || defaultSchedule;
+  } catch (error) {
+    console.error(`Failed to load availability for ${coachId}:`, error);
+    return defaultSchedule;
+  }
 }
 
 /**
