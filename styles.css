@@ -64,6 +64,22 @@ textarea{resize:vertical;min-height:120px}
 .time-slot.weekend{background:#080808;border-color:#1a1a1a;opacity:0.4;cursor:not-allowed}
 .time-slot.weekend:hover{transform:none;box-shadow:none;border-color:#1a1a1a}
 
-@media (max-width:900px){.grid{grid-template-columns:1fr 1fr}.slots{grid-template-columns:1fr 1fr}.calendar-header,.time-slots-grid{grid-template-columns:60px repeat(7,1fr)}}
-@media (max-width:600px){.grid{grid-template-columns:1fr}.slots{grid-template-columns:1fr}.calendar-header,.time-slots-grid{grid-template-columns:50px repeat(7,minmax(0,1fr))}.day-header,.time-slot{font-size:9px;padding:4px 2px}.time-label{font-size:9px;padding:6px 4px 6px 0}}
+/* Coach Selection */
+.coach-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:12px}
+.coach-card{background:linear-gradient(145deg,#1a1a1a,#0f0f0f);border:2px solid #222;border-radius:12px;padding:20px;text-align:center;transition:all 0.3s ease;cursor:pointer;position:relative}
+.coach-card::before{content:'';position:absolute;top:-1px;left:-1px;right:-1px;bottom:-1px;background:linear-gradient(45deg,transparent,rgba(244,196,48,0.1));border-radius:12px;z-index:-1;opacity:0;transition:opacity 0.3s ease}
+.coach-card:hover{transform:translateY(-3px);border-color:var(--yellow);box-shadow:0 8px 25px rgba(244,196,48,0.15)}
+.coach-card:hover::before{opacity:1}
+.coach-card.selected{border-color:var(--green);transform:translateY(-2px);box-shadow:0 10px 30px rgba(79,255,79,0.25)}
+.coach-card.selected::before{background:linear-gradient(45deg,transparent,rgba(79,255,79,0.15));opacity:1}
+.coach-photo{width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 12px auto;display:block;border:2px solid var(--yellow)}
+.coach-photo-placeholder{width:80px;height:80px;border-radius:50%;margin:0 auto 12px auto;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;color:#000;border:2px solid var(--yellow)}
+.coach-card h3{margin:0 0 8px 0;color:var(--text);font-size:16px;font-weight:700;letter-spacing:0.5px}
+.coach-bio{color:var(--muted);font-size:12px;margin:0 0 16px 0;line-height:1.4}
+.select-coach-btn{background:transparent;border:2px solid;border-radius:8px;padding:10px 16px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;cursor:pointer;font-size:12px;transition:all 0.2s ease;width:100%}
+.select-coach-btn:hover{background:rgba(244,196,48,0.1);transform:scale(1.02)}
+.coach-card.selected .select-coach-btn{background:var(--green);color:#000;border-color:var(--green)}
+
+@media (max-width:900px){.grid{grid-template-columns:1fr 1fr}.slots{grid-template-columns:1fr 1fr}.calendar-header,.time-slots-grid{grid-template-columns:60px repeat(7,1fr)}.coach-grid{grid-template-columns:1fr}}
+@media (max-width:600px){.grid{grid-template-columns:1fr}.slots{grid-template-columns:1fr}.calendar-header,.time-slots-grid{grid-template-columns:50px repeat(7,minmax(0,1fr))}.day-header,.time-slot{font-size:9px;padding:4px 2px}.time-label{font-size:9px;padding:6px 4px 6px 0}.coach-grid{grid-template-columns:1fr}}
 
