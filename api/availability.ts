@@ -27,7 +27,7 @@ export default async function handler(
       return res.status(400).json({ error: 'coachId is required' });
     }
 
-    const coaches = getCoaches();
+    const coaches = await getCoaches();
     const coach = coaches.find(c => c.id === coachId);
 
     if (!coach) {

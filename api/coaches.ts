@@ -21,7 +21,7 @@ export default async function handler(
   }
 
   try {
-    const coaches = getCoaches();
+    const coaches = await getCoaches();
 
     const response: CoachesResponse = {
       coaches: coaches.map(coach => ({

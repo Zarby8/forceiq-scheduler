@@ -139,14 +139,23 @@ struct Booking: Identifiable, Codable {
     let id: String
     let coachId: String
     let coachName: String
+    let coachColor: String
     let clientName: String
     let clientEmail: String
     let startTime: Date
     let endTime: Date
+
+    // Game details from booking form
     let game: String
-    let opponent: String
-    let position: String
-    let notes: String
+    let date: String
+    let time: String
+    let timezone: String
+    let focus: String
+    let performance: String
+    let rating: String
+    let source: String
+    let events: String
+    let calendarLink: String
 
     var isPast: Bool {
         endTime < Date()
@@ -158,6 +167,49 @@ struct Booking: Identifiable, Codable {
 
     var isUpcoming: Bool {
         startTime > Date()
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, coachId, coachName, coachColor, clientName, clientEmail
+        case game, date, time, timezone, focus, performance, rating, source, events, calendarLink
+        case startTime, endTime
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        coachId = try container.decode(String.self, forKey: .coachId)
+        coachName = try container.decode(String.self, forKey: .coachName)
+        coachColor = try container.decode(String.self, forKey: .coachColor)
+        clientName = try container.decode(String.self, forKey: .clientName)
+        clientEmail = try container.decode(String.self, forKey: .clientEmail)
+        game = try container.decode(String.self, forKey: .game)
+        date = try container.decode(String.self, forKey: .date)
+        time = try container.decode(String.self, forKey: .time)
+        timezone = try container.decode(String.self, forKey: .timezone)
+        focus = try container.decode(String.self, forKey: .focus)
+        performance = try container.decode(String.self, forKey: .performance)
+        rating = try container.decode(String.self, forKey: .rating)
+        source = try container.decode(String.self, forKey: .source)
+        events = try container.decode(String.self, forKey: .events)
+        calendarLink = try container.decode(String.self, forKey: .calendarLink)
+
+        // Parse ISO 8601 date strings
+        let startTimeString = try container.decode(String.self, forKey: .startTime)
+        let endTimeString = try container.decode(String.self, forKey: .endTime)
+
+        let formatter = ISO8601DateFormatter()
+        guard let start = formatter.date(from: startTimeString),
+              let end = formatter.date(from: endTimeString) else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .startTime,
+                in: container,
+                debugDescription: "Invalid date format"
+            )
+        }
+
+        startTime = start
+        endTime = end
     }
 }
 

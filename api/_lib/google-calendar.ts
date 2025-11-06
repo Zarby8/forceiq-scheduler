@@ -261,9 +261,9 @@ ${request.gameDetails.events ? `Events: ${request.gameDetails.events}` : ''}
         { method: 'popup', minutes: 60 },       // 1 hour before
       ],
     },
-    guestsCanModify: false,
+    guestsCanModify: true,  // Allow clients to cancel/reschedule
     guestsCanInviteOthers: false,
-    guestsCanSeeOtherGuests: false,
+    guestsCanSeeOtherGuests: true,  // Let client see coach in attendees
   };
 
   const response = await calendar.events.insert({
@@ -294,4 +294,106 @@ async function sendOwnerNotification(coach: Coach, request: any, event: any) {
     time: new Date(request.startTime).toLocaleString(),
     eventId: event.id,
   });
+}
+
+/**
+ * Fetch upcoming bookings from all coaches' calendars
+ */
+export async function getUpcomingBookings(coaches: Coach[]): Promise<any[]> {
+  const calendar = getCalendarClient();
+  const now = new Date();
+  const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+  const allBookings: any[] = [];
+
+  for (const coach of coaches) {
+    try {
+      const response = await calendar.events.list({
+        calendarId: coach.calendarId,
+        timeMin: now.toISOString(),
+        timeMax: twoWeeksFromNow.toISOString(),
+        singleEvents: true,
+        orderBy: 'startTime',
+      });
+
+      const events = response.data.items || [];
+
+      for (const event of events) {
+        // Only include ForceIQ sessions
+        if (!event.summary?.includes('ForceIQ Session')) continue;
+
+        const description = event.description || '';
+        const gameDetails = parseGameDetailsFromDescription(description);
+
+        allBookings.push({
+          id: event.id,
+          coachId: coach.id,
+          coachName: coach.name,
+          coachColor: coach.color,
+          clientName: gameDetails.clientName || 'Unknown',
+          clientEmail: gameDetails.clientEmail || '',
+          startTime: event.start?.dateTime || event.start?.date || '',
+          endTime: event.end?.dateTime || event.end?.date || '',
+          game: gameDetails.game || '',
+          date: gameDetails.date || '',
+          time: gameDetails.time || '',
+          timezone: gameDetails.timezone || '',
+          focus: gameDetails.focus || '',
+          performance: gameDetails.performance || '',
+          rating: gameDetails.rating || '',
+          source: gameDetails.source || '',
+          events: gameDetails.events || '',
+          calendarLink: event.htmlLink || '',
+        });
+      }
+    } catch (error) {
+      console.error(`Failed to fetch bookings for ${coach.name}:`, error);
+    }
+  }
+
+  return allBookings.sort((a, b) =>
+    new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+  );
+}
+
+/**
+ * Parse game details from calendar event description
+ */
+function parseGameDetailsFromDescription(description: string): any {
+  const lines = description.split('\n');
+  const details: any = {};
+
+  for (const line of lines) {
+    if (line.startsWith('Client: ')) {
+      details.clientName = line.substring(8).trim();
+    } else if (line.startsWith('Email: ')) {
+      details.clientEmail = line.substring(7).trim();
+    } else if (line.startsWith('Phone: ')) {
+      details.clientPhone = line.substring(7).trim();
+    } else if (line.startsWith('Timezone: ')) {
+      details.clientTimezone = line.substring(10).trim();
+    } else if (line.startsWith('Game: ')) {
+      details.game = line.substring(6).trim();
+    } else if (line.startsWith('Date: ')) {
+      details.date = line.substring(6).trim();
+    } else if (line.startsWith('Time: ')) {
+      const match = line.match(/Time: (.+?) \((.+?)\)/);
+      if (match) {
+        details.time = match[1].trim();
+        details.timezone = match[2].trim();
+      }
+    } else if (line.startsWith('Focus: ')) {
+      details.focus = line.substring(7).trim();
+    } else if (line.startsWith('Performance Rating: ')) {
+      details.rating = line.substring(20).trim();
+    } else if (line.startsWith('Self-Assessment: ')) {
+      details.performance = line.substring(17).trim();
+    } else if (line.startsWith('Source: ')) {
+      details.source = line.substring(8).trim();
+    } else if (line.startsWith('Events: ')) {
+      details.events = line.substring(8).trim();
+    }
+  }
+
+  return details;
 }

@@ -45,7 +45,7 @@ export default async function handler(
       });
     }
 
-    const coaches = getCoaches();
+    const coaches = await getCoaches();
     const coach = coaches.find(c => c.id === request.coachId);
 
     if (!coach) {

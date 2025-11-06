@@ -205,13 +205,43 @@ class AppModel: ObservableObject {
         isLoadingBookings = true
         defer { isLoadingBookings = false }
 
-        // TODO: Implement Google Calendar API calls to fetch events
-        // For now, this is a placeholder
-        // In production: fetch from both coaches' calendars via Google Calendar API
+        let apiUrl = "\(config.apiBaseUrl)/bookings"
 
-        print("📅 Fetching bookings...")
-        try? await Task.sleep(nanoseconds: 1_000_000_000) // 1s delay simulation
-        print("✅ Bookings fetched")
+        guard let url = URL(string: apiUrl) else {
+            print("❌ Invalid API URL")
+            return
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer XXMiwoyrVpkuCg4EX5oa0Bw2QYDMMSpR", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                print("❌ Failed to fetch bookings: HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+                return
+            }
+
+            let decoder = JSONDecoder()
+            let result = try decoder.decode(BookingsResponse.self, from: data)
+
+            await MainActor.run {
+                self.upcomingBookings = result.bookings
+                print("✅ Fetched \(result.bookings.count) bookings")
+            }
+        } catch {
+            print("❌ Error fetching bookings: \(error.localizedDescription)")
+        }
+    }
+
+    // Response structure for /api/bookings
+    private struct BookingsResponse: Codable {
+        let success: Bool
+        let bookings: [Booking]
+        let count: Int
     }
 
     // MARK: - Import/Export

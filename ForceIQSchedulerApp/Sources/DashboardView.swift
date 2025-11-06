@@ -204,39 +204,187 @@ struct SundaySchedulerCard: View {
 
 struct BookingCard: View {
     let booking: Booking
+    @State private var isExpanded = false
 
     var body: some View {
-        HStack(spacing: 16) {
-            // Coach color indicator
-            Rectangle()
-                .fill(Color(hex: "#F4C430")) // TODO: Use coach.color
-                .frame(width: 4)
+        VStack(spacing: 0) {
+            // Header (always visible)
+            Button(action: { withAnimation { isExpanded.toggle() } }) {
+                HStack(spacing: 16) {
+                    // Coach color indicator
+                    Rectangle()
+                        .fill(Color(hex: booking.coachColor))
+                        .frame(width: 4)
 
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text(booking.clientName)
-                        .font(.system(size: 15, weight: .bold, design: .default))
-                        .foregroundColor(ForceIQColors.textPrimary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(booking.clientName)
+                                .font(.system(size: 15, weight: .bold, design: .default))
+                                .foregroundColor(ForceIQColors.textPrimary)
 
-                    Spacer()
+                            Spacer()
 
-                    Text(booking.coachName)
-                        .font(.system(size: 11, weight: .bold, design: .default))
-                        .tracking(1)
+                            Text(booking.coachName)
+                                .font(.system(size: 11, weight: .bold, design: .default))
+                                .tracking(1)
+                                .foregroundColor(Color(hex: booking.coachColor))
+                        }
+
+                        HStack(spacing: 12) {
+                            Label {
+                                Text(booking.startTime, style: .time)
+                            } icon: {
+                                Image(systemName: "clock.fill")
+                            }
+
+                            Label {
+                                Text(booking.startTime, style: .date)
+                            } icon: {
+                                Image(systemName: "calendar")
+                            }
+
+                            if !booking.game.isEmpty {
+                                Label {
+                                    Text(booking.game)
+                                } icon: {
+                                    Image(systemName: "sportscourt.fill")
+                                }
+                            }
+                        }
+                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .foregroundColor(ForceIQColors.textSecondary)
+                    }
+                    .padding(.vertical, 12)
+
+                    Image(systemName: "chevron.right")
                         .foregroundColor(ForceIQColors.textMuted)
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .animation(.easeInOut(duration: 0.2), value: isExpanded)
                 }
-
-                HStack(spacing: 12) {
-                    Label(booking.startTime, style: .time)
-                    Label(booking.game, systemImage: "sportscourt.fill")
-                }
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundColor(ForceIQColors.textSecondary)
+                .padding(.horizontal, 16)
             }
-            .padding(.vertical, 12)
+            .buttonStyle(.plain)
+
+            // Game Details (expandable)
+            if isExpanded {
+                Divider()
+                    .background(ForceIQColors.forceRed.opacity(0.3))
+                    .padding(.horizontal, 16)
+
+                VStack(alignment: .leading, spacing: 16) {
+                    // Client Contact
+                    DetailRow(label: "Email", value: booking.clientEmail, icon: "envelope.fill")
+
+                    // Game Details Section
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("GAME DETAILS")
+                            .font(.system(size: 10, weight: .black, design: .default))
+                            .tracking(1.5)
+                            .foregroundColor(ForceIQColors.highlightYellow)
+
+                        DetailRow(label: "Game", value: booking.game, icon: "sportscourt.fill")
+                        DetailRow(label: "Date", value: booking.date, icon: "calendar")
+                        DetailRow(label: "Time", value: "\(booking.time) (\(booking.timezone))", icon: "clock")
+                        DetailRow(label: "Source", value: booking.source, icon: "video.fill")
+                        DetailRow(label: "Rating", value: booking.rating, icon: "star.fill")
+                    }
+
+                    // Focus Area
+                    if !booking.focus.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("FOCUS")
+                                .font(.system(size: 10, weight: .black, design: .default))
+                                .tracking(1.5)
+                                .foregroundColor(ForceIQColors.highlightYellow)
+
+                            Text(booking.focus)
+                                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                .foregroundColor(ForceIQColors.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    // Performance Self-Assessment
+                    if !booking.performance.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("SELF-ASSESSMENT")
+                                .font(.system(size: 10, weight: .black, design: .default))
+                                .tracking(1.5)
+                                .foregroundColor(ForceIQColors.highlightYellow)
+
+                            Text(booking.performance)
+                                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                .foregroundColor(ForceIQColors.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    // Special Events
+                    if !booking.events.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("EVENTS")
+                                .font(.system(size: 10, weight: .black, design: .default))
+                                .tracking(1.5)
+                                .foregroundColor(ForceIQColors.highlightYellow)
+
+                            Text(booking.events)
+                                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                .foregroundColor(ForceIQColors.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+
+                    // Calendar Link
+                    if let url = URL(string: booking.calendarLink) {
+                        Link(destination: url) {
+                            HStack {
+                                Image(systemName: "calendar.badge.clock")
+                                Text("Open in Google Calendar")
+                            }
+                            .font(.system(size: 12, weight: .bold, design: .default))
+                            .foregroundColor(ForceIQColors.electricGreen)
+                            .padding(.vertical, 8)
+                        }
+                    }
+                }
+                .padding(16)
+                .background(ForceIQColors.iceCharcoalDark)
+            }
         }
-        .padding(.horizontal, 16)
-        .forceIQCard(level: 2)
+        .background(isExpanded ? ForceIQColors.iceCharcoal : ForceIQColors.iceCharcoal)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color(hex: booking.coachColor).opacity(0.3), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Detail Row
+
+struct DetailRow: View {
+    let label: String
+    let value: String
+    let icon: String
+
+    var body: some View {
+        if !value.isEmpty {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 10))
+                    .foregroundColor(ForceIQColors.textMuted)
+                    .frame(width: 16)
+
+                Text(label + ":")
+                    .font(.system(size: 11, weight: .bold, design: .default))
+                    .foregroundColor(ForceIQColors.textMuted)
+                    .frame(width: 80, alignment: .leading)
+
+                Text(value)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundColor(ForceIQColors.textPrimary)
+            }
+        }
     }
 }
 
