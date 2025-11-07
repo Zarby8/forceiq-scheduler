@@ -22,6 +22,8 @@
     <string>14.0</string>
     <key>NSAppleEventsUsageDescription</key>
     <string>ForceIQ Scheduler needs access to send iMessages to your clients with booking links.</string>
+    <key>NSContactsUsageDescription</key>
+    <string>ForceIQ Scheduler needs access to your contacts to import client information.</string>
     <key>NSAppleScriptEnabled</key>
     <true/>
     <key>NSHumanReadableCopyright</key>
