@@ -1,6 +1,5 @@
 // Google Calendar API helper
 import { google } from 'googleapis';
-import { kv } from '@vercel/kv';
 import type { Coach, TimeSlot, WeeklySchedule } from '../../shared/types';
 
 const SLOT_MINUTES = 60;
@@ -61,9 +60,9 @@ export async function getCoaches(): Promise<Coach[]> {
 }
 
 /**
- * Get coach availability from KV storage
+ * Get coach availability from environment variables
  */
-async function getCoachAvailability(coachId: string): Promise<WeeklySchedule> {
+function getCoachAvailability(coachId: string): WeeklySchedule {
   const defaultSchedule: WeeklySchedule = {
     0: [], // Sunday
     1: [], // Monday
@@ -74,40 +73,28 @@ async function getCoachAvailability(coachId: string): Promise<WeeklySchedule> {
     6: [], // Saturday
   };
 
+  const envKey = coachId === 'coach1' ? 'COACH_1_WEEKLY_HOURS' : 'COACH_2_WEEKLY_HOURS';
+  const weeklyHoursJson = process.env[envKey];
+
+  if (!weeklyHoursJson) {
+    return defaultSchedule;
+  }
+
   try {
-    const kvKey = `availability:${coachId}`;
-    const stored = await kv.get<WeeklySchedule>(kvKey);
-    return stored || defaultSchedule;
+    return JSON.parse(weeklyHoursJson) as WeeklySchedule;
   } catch (error) {
-    console.error(`Failed to load availability for ${coachId}:`, error);
+    console.error(`Failed to parse availability for ${coachId}:`, error);
     return defaultSchedule;
   }
 }
 
-/**
- * Parse weekly hours from JSON string
- */
-function parseWeeklyHours(json?: string): WeeklySchedule {
-  const defaultSchedule: WeeklySchedule = {
-    0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: []
-  };
-
-  if (!json) return defaultSchedule;
-
-  try {
-    return JSON.parse(json) as WeeklySchedule;
-  } catch {
-    return defaultSchedule;
-  }
-}
 
 /**
  * Get available time slots for a coach
  */
 export async function getAvailableSlots(
   coach: Coach,
-  weekOffset: number = 0,
-  timezone: string = process.env.TIMEZONE || 'America/Detroit'
+  weekOffset: number = 0
 ): Promise<TimeSlot[]> {
   const calendar = getCalendarClient();
 
@@ -285,8 +272,6 @@ ${request.gameDetails.events ? `Events: ${request.gameDetails.events}` : ''}
  * Send notification email to owners
  */
 async function sendOwnerNotification(coach: Coach, request: any, event: any) {
-  const ownerEmails = process.env.OWNER_EMAILS?.split(',').map(e => e.trim()) || [];
-
   // In a production app, you'd integrate with SendGrid, AWS SES, or similar
   // For now, we'll rely on Google Calendar's built-in notifications
   console.log(`[Notification] New booking for ${coach.name}:`, {

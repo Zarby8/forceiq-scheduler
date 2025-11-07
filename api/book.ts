@@ -70,8 +70,8 @@ export default async function handler(
 
     const response: BookingResponse = {
       success: true,
-      eventId: result.eventId,
-      calendarLink: result.calendarLink,
+      eventId: result.eventId || undefined,
+      calendarLink: result.calendarLink || undefined,
     };
 
     return res.status(200).json(response);
