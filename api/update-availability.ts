@@ -1,7 +1,6 @@
-// POST /api/update-availability - Update coach availability in KV storage
+// POST /api/update-availability - Availability must be set via Vercel environment variables
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { kv } from '@vercel/kv';
 import type { WeeklySchedule } from '../shared/types';
 
 interface UpdateAvailabilityRequest {
@@ -41,16 +40,25 @@ export default async function handler(
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // Store in KV with key: availability:{coachId}
-    const kvKey = `availability:${coachId}`;
-    await kv.set(kvKey, weeklyHours);
+    // Availability is now stored in Vercel environment variables
+    // Format the JSON for the user to paste into Vercel
+    const envVarName = coachId === 'coach1' ? 'COACH_1_WEEKLY_HOURS' : 'COACH_2_WEEKLY_HOURS';
+    const jsonValue = JSON.stringify(weeklyHours);
 
-    console.log(`✅ Updated availability for coach: ${coachId}`);
+    console.log(`📋 Availability update requested for ${coachId}`);
+    console.log(`Set this in Vercel Dashboard → Settings → Environment Variables:`);
+    console.log(`${envVarName}=${jsonValue}`);
 
     return res.status(200).json({
       success: true,
       coachId,
-      message: 'Availability updated successfully'
+      message: 'To apply this availability, set the following environment variable in Vercel Dashboard',
+      instructions: {
+        location: 'Vercel Dashboard → Settings → Environment Variables',
+        variable: envVarName,
+        value: jsonValue,
+        note: 'After setting, redeploy for changes to take effect'
+      }
     });
   } catch (error) {
     console.error('❌ Error updating availability:', error);
