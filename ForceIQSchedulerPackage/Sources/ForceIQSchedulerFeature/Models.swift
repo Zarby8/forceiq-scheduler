@@ -10,6 +10,7 @@ struct Client: Identifiable, Codable, Hashable {
     var createdAt: Date
     var lastMessageSent: Date?
     var totalBookings: Int
+    var selectedForSending: Bool
 
     init(
         id: UUID = UUID(),
@@ -19,7 +20,8 @@ struct Client: Identifiable, Codable, Hashable {
         notes: String = "",
         createdAt: Date = Date(),
         lastMessageSent: Date? = nil,
-        totalBookings: Int = 0
+        totalBookings: Int = 0,
+        selectedForSending: Bool = true
     ) {
         self.id = id
         self.name = name
@@ -29,6 +31,7 @@ struct Client: Identifiable, Codable, Hashable {
         self.createdAt = createdAt
         self.lastMessageSent = lastMessageSent
         self.totalBookings = totalBookings
+        self.selectedForSending = selectedForSending
     }
 }
 

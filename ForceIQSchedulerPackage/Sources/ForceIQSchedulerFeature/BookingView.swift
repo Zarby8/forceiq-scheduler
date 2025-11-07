@@ -7,6 +7,7 @@ struct BookingView: View {
     @State private var selectedDate = Date()
     @State private var selectedTimeHour = 9
     @State private var selectedTimeMinute = 0
+    @State private var selectedTimeAMPM = "AM"
     @State private var duration = 60 // minutes
     @State private var gameRequest = ""
     @State private var isBooking = false
@@ -124,8 +125,8 @@ struct BookingView: View {
                                     .foregroundColor(ForceIQColors.textMuted)
 
                                 Picker("Hour", selection: $selectedTimeHour) {
-                                    ForEach(0..<24) { hour in
-                                        Text(String(format: "%02d", hour)).tag(hour)
+                                    ForEach(1...12, id: \.self) { hour in
+                                        Text(String(format: "%d", hour)).tag(hour)
                                     }
                                 }
                                 .pickerStyle(.menu)
@@ -147,6 +148,20 @@ struct BookingView: View {
                                     ForEach([0, 15, 30, 45], id: \.self) { minute in
                                         Text(String(format: "%02d", minute)).tag(minute)
                                     }
+                                }
+                                .pickerStyle(.menu)
+                                .frame(height: 80)
+                            }
+
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("AM/PM")
+                                    .font(.system(size: 10, weight: .bold, design: .default))
+                                    .tracking(1)
+                                    .foregroundColor(ForceIQColors.textMuted)
+
+                                Picker("AM/PM", selection: $selectedTimeAMPM) {
+                                    Text("AM").tag("AM")
+                                    Text("PM").tag("PM")
                                 }
                                 .pickerStyle(.menu)
                                 .frame(height: 80)
@@ -229,9 +244,17 @@ struct BookingView: View {
 
         Task {
             do {
+                // Convert 12-hour time to 24-hour format
+                var hour24 = selectedTimeHour
+                if selectedTimeAMPM == "PM" && selectedTimeHour != 12 {
+                    hour24 = selectedTimeHour + 12
+                } else if selectedTimeAMPM == "AM" && selectedTimeHour == 12 {
+                    hour24 = 0
+                }
+
                 // Build start and end times
                 var components = Calendar.current.dateComponents([.year, .month, .day], from: selectedDate)
-                components.hour = selectedTimeHour
+                components.hour = hour24
                 components.minute = selectedTimeMinute
 
                 guard let startTime = Calendar.current.date(from: components) else {

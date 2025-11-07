@@ -175,8 +175,11 @@ class AppModel: ObservableObject {
         print("📤 Starting Sunday message send...")
 
         let bookingUrl = config.bookingPageUrl
+        let selectedClients = clients.filter { $0.selectedForSending }
 
-        for client in clients {
+        print("📊 Sending to \(selectedClients.count) of \(clients.count) clients")
+
+        for client in selectedClients {
             let link = "\(bookingUrl)?cid=\(client.id.uuidString)&name=\(client.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&email=\(client.email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
 
             let message = config.sundayConfig.messageTemplate

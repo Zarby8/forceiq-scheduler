@@ -1,10 +1,13 @@
 import SwiftUI
+import Contacts
 
 struct ClientsView: View {
     @EnvironmentObject var appModel: AppModel
     @State private var searchText = ""
     @State private var showingAddClient = false
+    @State private var showingContactsPicker = false
     @State private var selectedClient: Client?
+    @State private var importStatus = ""
 
     var filteredClients: [Client] {
         if searchText.isEmpty {
@@ -31,6 +34,11 @@ struct ClientsView: View {
                     .padding(.vertical, 6)
                     .background(ForceIQColors.iceCharcoalDark)
                     .cornerRadius(4)
+
+                Button(action: { showingContactsPicker = true }) {
+                    Label("Import Contacts", systemImage: "person.crop.circle.badge.plus")
+                }
+                .buttonStyle(ForceIQButtonStyle(type: .secondary))
 
                 Button(action: { showingAddClient = true }) {
                     Label("Add Client", systemImage: "plus")
@@ -110,6 +118,41 @@ struct ClientsView: View {
         .sheet(item: $selectedClient) { client in
             ClientFormView(mode: .edit(client))
         }
+        .sheet(isPresented: $showingContactsPicker) {
+            ContactsPickerView(onImport: importContacts)
+        }
+    }
+
+    private func importContacts(_ contacts: [CNContact]) {
+        let store = CNContactStore()
+
+        for contact in contacts {
+            // Get primary phone number
+            let phoneNumber = contact.phoneNumbers.first?.value.stringValue ?? ""
+
+            // Skip if already exists by phone or email
+            let existsByPhone = appModel.clients.contains { $0.phone == phoneNumber }
+            let existsByEmail = appModel.clients.contains { client in
+                contact.emailAddresses.contains { $0.value as String == client.email }
+            }
+
+            if existsByPhone || existsByEmail {
+                continue
+            }
+
+            let client = Client(
+                name: "\(contact.givenName) \(contact.familyName)".trimmingCharacters(in: .whitespaces),
+                email: contact.emailAddresses.first?.value as? String ?? "",
+                phone: phoneNumber
+            )
+
+            appModel.addClient(client)
+        }
+
+        importStatus = "✅ Imported \(contacts.count) contacts"
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            importStatus = ""
+        }
     }
 }
 
@@ -125,6 +168,26 @@ struct ClientCard: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 16) {
+                // Selection Checkbox
+                Button(action: {
+                    var updatedClient = client
+                    updatedClient.selectedForSending.toggle()
+                    appModel.updateClient(updatedClient)
+                }) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(client.selectedForSending ? ForceIQColors.electricGreen : ForceIQColors.forceRed.opacity(0.3), lineWidth: 2)
+                            .frame(width: 24, height: 24)
+
+                        if client.selectedForSending {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(ForceIQColors.electricGreen)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+
                 // Avatar
                 Circle()
                     .fill(
@@ -344,5 +407,242 @@ struct FormField: View {
             TextField(placeholder, text: $text)
                 .textFieldStyle(ForceIQTextFieldStyle())
         }
+    }
+}
+
+// MARK: - Contacts Picker
+
+struct ContactsPickerView: View {
+    @Environment(\.dismiss) var dismiss
+    let onImport: ([CNContact]) -> Void
+    
+    @State private var contacts: [CNContact] = []
+    @State private var selectedContacts: Set<String> = []
+    @State private var searchText = ""
+    @State private var isLoading = true
+    @State private var errorMessage = ""
+    
+    var filteredContacts: [CNContact] {
+        if searchText.isEmpty {
+            return contacts
+        }
+        return contacts.filter {
+            "\($0.givenName) \($0.familyName)".localizedCaseInsensitiveContains(searchText) ||
+            $0.emailAddresses.contains { ($0.value as String).localizedCaseInsensitiveContains(searchText) }
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                ForceIQSectionHeader(title: "Import from Contacts")
+                Spacer()
+                Button(action: { dismiss() }) {
+                    Image(systemName: "xmark")
+                        .foregroundColor(ForceIQColors.textMuted)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(24)
+            
+            Divider()
+                .background(ForceIQColors.forceRed.opacity(0.3))
+            
+            if !errorMessage.isEmpty {
+                Text(errorMessage)
+                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                    .foregroundColor(ForceIQColors.forceRed)
+                    .padding()
+            }
+            
+            // Search
+            HStack {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(ForceIQColors.textMuted)
+                
+                TextField("Search contacts...", text: $searchText)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 14, weight: .regular, design: .monospaced))
+                    .foregroundColor(ForceIQColors.textPrimary)
+            }
+            .padding(12)
+            .background(ForceIQColors.iceCharcoalDark)
+            .cornerRadius(6)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(ForceIQColors.forceRed.opacity(0.3), lineWidth: 1)
+            )
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            
+            // Contacts List
+            if isLoading {
+                Spacer()
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .tint(ForceIQColors.electricGreen)
+                Spacer()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(filteredContacts, id: \.identifier) { contact in
+                            ContactRow(
+                                contact: contact,
+                                isSelected: selectedContacts.contains(contact.identifier)
+                            ) {
+                                if selectedContacts.contains(contact.identifier) {
+                                    selectedContacts.remove(contact.identifier)
+                                } else {
+                                    selectedContacts.insert(contact.identifier)
+                                }
+                            }
+                        }
+                    }
+                    .padding(24)
+                }
+            }
+            
+            // Footer
+            HStack {
+                Text("\(selectedContacts.count) SELECTED")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundColor(ForceIQColors.textMuted)
+                
+                Spacer()
+                
+                Button(action: { dismiss() }) {
+                    Text("Cancel")
+                }
+                .buttonStyle(ForceIQButtonStyle(type: .secondary))
+                
+                Button(action: importSelected) {
+                    Text("Import \(selectedContacts.count) Contacts")
+                }
+                .buttonStyle(ForceIQButtonStyle(type: .primary))
+                .disabled(selectedContacts.isEmpty)
+            }
+            .padding(24)
+            .background(ForceIQColors.iceCharcoal)
+        }
+        .frame(width: 600, height: 700)
+        .background(ForceIQColors.iceCharcoal)
+        .task {
+            await loadContacts()
+        }
+    }
+    
+    private func loadContacts() async {
+        let store = CNContactStore()
+        
+        do {
+            // Request access
+            let granted = try await store.requestAccess(for: .contacts)
+            
+            guard granted else {
+                errorMessage = "❌ Contacts access denied. Please enable in System Settings."
+                isLoading = false
+                return
+            }
+            
+            // Fetch contacts
+            let keys = [CNContactGivenNameKey, CNContactFamilyNameKey, CNContactPhoneNumbersKey, CNContactEmailAddressesKey] as [CNKeyDescriptor]
+            let request = CNContactFetchRequest(keysToFetch: keys)
+            
+            var fetchedContacts: [CNContact] = []
+            try store.enumerateContacts(with: request) { contact, _ in
+                // Only include contacts with phone or email
+                if !contact.phoneNumbers.isEmpty || !contact.emailAddresses.isEmpty {
+                    fetchedContacts.append(contact)
+                }
+            }
+            
+            await MainActor.run {
+                self.contacts = fetchedContacts.sorted { a, b in
+                    "\(a.givenName) \(a.familyName)" < "\(b.givenName) \(b.familyName)"
+                }
+                isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                errorMessage = "❌ Failed to load contacts: \(error.localizedDescription)"
+                isLoading = false
+            }
+        }
+    }
+    
+    private func importSelected() {
+        let selectedContactObjects = contacts.filter { selectedContacts.contains($0.identifier) }
+        onImport(selectedContactObjects)
+        dismiss()
+    }
+}
+
+struct ContactRow: View {
+    let contact: CNContact
+    let isSelected: Bool
+    let onToggle: () -> Void
+    
+    var body: some View {
+        Button(action: onToggle) {
+            HStack(spacing: 16) {
+                // Checkbox
+                ZStack {
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(isSelected ? ForceIQColors.electricGreen : ForceIQColors.forceRed.opacity(0.3), lineWidth: 2)
+                        .frame(width: 24, height: 24)
+                    
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(ForceIQColors.electricGreen)
+                    }
+                }
+                
+                // Avatar
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [ForceIQColors.highlightYellow, ForceIQColors.electricGreen],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 40, height: 40)
+                    .overlay(
+                        Text(String(contact.givenName.prefix(1) + contact.familyName.prefix(1)).uppercased())
+                            .font(.system(size: 14, weight: .black, design: .default))
+                            .foregroundColor(ForceIQColors.black)
+                    )
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("\(contact.givenName) \(contact.familyName)")
+                        .font(.system(size: 14, weight: .bold, design: .default))
+                        .foregroundColor(ForceIQColors.textPrimary)
+                    
+                    if let email = contact.emailAddresses.first?.value as? String {
+                        Text(email)
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundColor(ForceIQColors.textSecondary)
+                    }
+                    
+                    if let phone = contact.phoneNumbers.first?.value.stringValue {
+                        Text(phone)
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundColor(ForceIQColors.textMuted)
+                    }
+                }
+                
+                Spacer()
+            }
+            .padding(16)
+        }
+        .buttonStyle(.plain)
+        .background(isSelected ? ForceIQColors.iceCharcoalDark : ForceIQColors.iceCharcoal)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isSelected ? ForceIQColors.electricGreen.opacity(0.5) : ForceIQColors.forceRed.opacity(0.3), lineWidth: 1)
+        )
     }
 }
