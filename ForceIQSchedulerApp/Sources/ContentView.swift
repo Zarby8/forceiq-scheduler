@@ -15,6 +15,8 @@ struct ContentView: View {
                     DashboardView()
                 case .clients:
                     ClientsView()
+                case .booking:
+                    BookingView()
                 case .availability:
                     AvailabilityView()
                 case .settings:

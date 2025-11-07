@@ -1,212 +1,281 @@
 import Foundation
-import Combine
-import CryptoKit
+import SwiftUI
 
-public final class AppModel: ObservableObject {
+@MainActor
+class AppModel: ObservableObject {
+    // MARK: - Published State
+
     @Published var clients: [Client] = []
-    @Published var messageTemplate: String = "Hi {name}! Here's my ForceIQ scheduling link: {link}\n\nPlease pick a slot and answer the game questions."
-    @Published var sending: Bool = false
-    @Published var status: String = ""
-    @Published var logs: [String] = []
-    @Published var sendResults: [String: SendResult] = [:]
+    @Published var config: AppConfig = .default
+    @Published var upcomingBookings: [Booking] = []
 
-    public let config = AppConfig()
+    @Published var selectedTab: Tab = .dashboard
+    @Published var isLoadingBookings = false
 
-    private let saveURL: URL = {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = base.appendingPathComponent("ForceIQScheduler", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("clients.json")
-    }()
+    // MARK: - Services
 
-    public init() {
-        load()
-        if clients.isEmpty {
-            clients = [
-                Client(name: "Jane Appleseed", handle: "+15551234567", email: "jane@example.com"),
-                Client(name: "Client B", handle: "clientb@example.com", email: "clientb@example.com"),
-                Client(name: "Client C", handle: "+15557654321", email: "c@example.com")
-            ]
+    private let storage = StorageManager.shared
+    let googleAuth = GoogleAuthService()
+    let iMessageService = IMessageService()
+    let sundayScheduler = SundayScheduler()
+
+    // MARK: - Tabs
+
+    enum Tab: String, CaseIterable {
+        case dashboard = "Dashboard"
+        case clients = "Clients"
+        case booking = "Book Session"
+        case availability = "Availability"
+        case settings = "Settings"
+
+        var icon: String {
+            switch self {
+            case .dashboard: return "chart.bar.fill"
+            case .clients: return "person.3.fill"
+            case .booking: return "calendar.badge.plus"
+            case .availability: return "calendar.badge.clock"
+            case .settings: return "gearshape.fill"
+            }
         }
     }
 
-    func load() {
-        guard let data = try? Data(contentsOf: saveURL) else { return }
-        if let decoded = try? JSONDecoder().decode([Client].self, from: data) {
-            clients = decoded
-        }
-    }
-    func save() {
-        if let data = try? JSONEncoder().encode(clients) {
-            try? data.write(to: saveURL)
-        }
+    // MARK: - Initialization
+
+    init() {
+        loadData()
+        setupSundayScheduler()
     }
 
-    public func exportClients() -> Data? {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        return try? encoder.encode(clients)
+    private func loadData() {
+        self.clients = storage.loadClients()
+        self.config = storage.loadConfig()
     }
 
-    public func importClients(from data: Data) -> Bool {
-        do {
-            let decoder = JSONDecoder()
-            let importedClients = try decoder.decode([Client].self, from: data)
-            clients = importedClients
-            save()
-            status = "Imported \(importedClients.count) clients successfully."
-            return true
-        } catch {
-            status = "Import failed: \(error.localizedDescription)"
-            return false
+    // MARK: - Client Management
+
+    func addClient(_ client: Client) {
+        clients.append(client)
+        storage.saveClients(clients)
+    }
+
+    func updateClient(_ client: Client) {
+        if let index = clients.firstIndex(where: { $0.id == client.id }) {
+            clients[index] = client
+            storage.saveClients(clients)
         }
     }
 
-    public func exportClientsAsCSV() -> String {
-        var csv = "Name,Handle,Email,Active,DoNotDisturb,Notes\n"
-        for client in clients {
-            let name = client.name.replacingOccurrences(of: ",", with: ";")
-            let handle = client.handle.replacingOccurrences(of: ",", with: ";")
-            let email = client.email.replacingOccurrences(of: ",", with: ";")
-            let notes = client.notes.replacingOccurrences(of: ",", with: ";")
-            csv += "\(name),\(handle),\(email),\(client.active),\(client.doNotDisturb),\(notes)\n"
+    func deleteClient(_ client: Client) {
+        clients.removeAll { $0.id == client.id }
+        storage.saveClients(clients)
+    }
+
+    func deleteClients(at offsets: IndexSet) {
+        clients.remove(atOffsets: offsets)
+        storage.saveClients(clients)
+    }
+
+    // MARK: - Config Management
+
+    func updateConfig(_ newConfig: AppConfig) {
+        self.config = newConfig
+        storage.saveConfig(newConfig)
+    }
+
+    func updateCoach(_ coach: Coach) {
+        if let index = config.coaches.firstIndex(where: { $0.id == coach.id }) {
+            config.coaches[index] = coach
+            storage.saveConfig(config)
+
+            // Sync availability to Vercel
+            Task {
+                await syncCoachAvailability(coach)
+            }
         }
-        return csv
     }
 
-    func resolvedMessage(for client: Client, link: String) -> String {
-        messageTemplate
-            .replacingOccurrences(of: "{name}", with: client.name)
-            .replacingOccurrences(of: "{link}", with: link)
-    }
+    // MARK: - Vercel Sync
 
-    func buildSignedLink(for client: Client) -> String {
-        // token = base64url(HMAC_SHA256(secret, cid|ts)) &ts=...&cid=...
-        let cid = client.id.uuidString
-        let ts = String(Int(Date().timeIntervalSince1970))
-        let dataToSign = (cid + "|" + ts).data(using: .utf8)!
-        let key = SymmetricKey(data: config.hmacSecret.data(using: .utf8)!)
-        let sig = HMAC<SHA256>.authenticationCode(for: dataToSign, using: key)
-        let token = Data(sig).base64EncodedString()
-            .replacingOccurrences(of: "+", with: "-")
-            .replacingOccurrences(of: "/", with: "_")
-            .replacingOccurrences(of: "=", with: "")
+    private func syncCoachAvailability(_ coach: Coach) async {
+        let apiUrl = "\(config.apiBaseUrl)/update-availability"
 
-        var comps = URLComponents(url: config.webBaseURL, resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
-            .init(name: "cid", value: cid),
-            .init(name: "name", value: client.name),
-            .init(name: "email", value: client.email),
-            .init(name: "ts", value: ts),
-            .init(name: "sig", value: token)
-        ]
-        return comps.url!.absoluteString
-    }
-
-    func sendSelected() {
-        let targets = clients.filter { $0.selected && $0.active && !$0.handle.isEmpty && !$0.doNotDisturb }
-        guard !targets.isEmpty else {
-            status = "Select at least one active, non-DND client with a handle."
+        guard let adminToken = KeychainManager.shared.getAdminToken() else {
+            print("❌ Admin token not found in Keychain")
             return
         }
-        sending = true
-        status = "Sending to \(targets.count)..."
-        logs.removeAll()
-        sendResults.removeAll()
 
-        // Simple synchronous approach to avoid concurrency issues
-        var successCount = 0
-        var failedNames: [String] = []
+        // Convert WeeklySchedule to API format (0-6 integer keys)
+        let apiSchedule: [Int: [[String: String]]] = [
+            0: coach.weeklyHours.sunday.map { ["start": $0.start, "end": $0.end] },
+            1: coach.weeklyHours.monday.map { ["start": $0.start, "end": $0.end] },
+            2: coach.weeklyHours.tuesday.map { ["start": $0.start, "end": $0.end] },
+            3: coach.weeklyHours.wednesday.map { ["start": $0.start, "end": $0.end] },
+            4: coach.weeklyHours.thursday.map { ["start": $0.start, "end": $0.end] },
+            5: coach.weeklyHours.friday.map { ["start": $0.start, "end": $0.end] },
+            6: coach.weeklyHours.saturday.map { ["start": $0.start, "end": $0.end] }
+        ]
 
-        for (index, client) in targets.enumerated() {
-            status = "Sending to \(client.name)... (\(index + 1)/\(targets.count))"
+        let payload: [String: Any] = [
+            "coachId": coach.id,
+            "weeklyHours": apiSchedule,
+            "adminToken": adminToken
+        ]
 
-            let link = buildSignedLink(for: client)
-            let text = resolvedMessage(for: client, link: link)
+        guard let url = URL(string: apiUrl),
+              let jsonData = try? JSONSerialization.data(withJSONObject: payload) else {
+            print("❌ Failed to create sync request")
+            return
+        }
 
-            // Try up to 3 times
-            var success = false
-            var lastError: String?
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
 
-            for attempt in 1...3 {
-                if attempt > 1 {
-                    Thread.sleep(forTimeInterval: Double(attempt) * 0.5) // 0.5, 1.0, 1.5 second delays
-                }
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
 
-                success = sendMessageAppleScript(handle: client.handle, text: text)
-                if success {
-                    break
-                } else {
-                    lastError = "Send failed (attempt \(attempt))"
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                print("✅ Synced availability for \(coach.name) to Vercel")
+            } else {
+                print("❌ Failed to sync availability: HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+                if let responseText = String(data: data, encoding: .utf8) {
+                    print("Response: \(responseText)")
                 }
             }
+        } catch {
+            print("❌ Error syncing availability: \(error.localizedDescription)")
+        }
+    }
 
-            let result = SendResult(handle: client.handle, success: success, error: lastError)
-            sendResults[client.id.uuidString] = result
+    func updateSundayConfig(_ sundayConfig: SundaySendConfig) {
+        config.sundayConfig = sundayConfig
+        storage.saveConfig(config)
+    }
+
+    // MARK: - Sunday Scheduler
+
+    private func setupSundayScheduler() {
+        sundayScheduler.configure(
+            enabled: config.sundayConfig.enabled,
+            sendTime: config.sundayConfig.sendTime
+        ) { [weak self] in
+            await self?.sendSundayMessages()
+        }
+    }
+
+    func toggleSundayScheduler(_ enabled: Bool) {
+        var newConfig = config.sundayConfig
+        newConfig.enabled = enabled
+        updateSundayConfig(newConfig)
+        setupSundayScheduler()
+    }
+
+    func sendSundayMessages() async {
+        print("📤 Starting Sunday message send...")
+
+        let bookingUrl = config.bookingPageUrl
+
+        for client in clients {
+            let link = "\(bookingUrl)?cid=\(client.id.uuidString)&name=\(client.name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&email=\(client.email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+
+            let message = config.sundayConfig.messageTemplate
+                .replacingOccurrences(of: "{name}", with: client.name)
+                .replacingOccurrences(of: "{link}", with: link)
+
+            let success = iMessageService.sendMessage(message, to: client.phone)
 
             if success {
-                successCount += 1
+                print("✅ Sent to \(client.name)")
+                var updatedClient = client
+                updatedClient.lastMessageSent = Date()
+                updateClient(updatedClient)
             } else {
-                failedNames.append(client.name)
+                print("❌ Failed to send to \(client.name)")
             }
 
-            // Delay between clients
-            if index < targets.count - 1 {
-                Thread.sleep(forTimeInterval: 0.4)
-            }
+            // Small delay between messages
+            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5s
         }
 
-        sending = false
-        let totalCount = targets.count
-        if failedNames.isEmpty {
-            status = "✅ Successfully sent to all \(totalCount) clients."
-        } else {
-            status = "⚠️ Sent to \(successCount)/\(totalCount). Failed: \(failedNames.joined(separator: ", "))"
+        // Update last sent date
+        var newConfig = config.sundayConfig
+        newConfig.lastSentDate = Date()
+        updateSundayConfig(newConfig)
+
+        print("✅ Sunday message send complete")
+    }
+
+    // MARK: - Bookings
+
+    func fetchUpcomingBookings() async {
+        isLoadingBookings = true
+        defer { isLoadingBookings = false }
+
+        guard let adminToken = KeychainManager.shared.getAdminToken() else {
+            print("❌ Admin token not found in Keychain")
+            return
         }
-        addLog("Send completed: \(successCount) successful, \(failedNames.count) failed")
-    }
 
-    private func addLog(_ message: String) {
-        let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
-        logs.append("[\(timestamp)] \(message)")
-    }
+        let apiUrl = "\(config.apiBaseUrl)/bookings"
 
-    private func sendMessageAppleScript(handle: String, text: String) -> Bool {
-        let script = """
-        on run argv
-            set theHandle to item 1 of argv
-            set theText to item 2 of argv
-            tell application "Messages"
-                activate
-                set iMsg to missing value
-                set smsSvc to missing value
-                try
-                    set iMsg to first service whose service type = iMessage
-                end try
-                try
-                    set smsSvc to first service whose service type = SMS
-                end try
-                set theService to iMsg
-                if theService is missing value then set theService to smsSvc
-                if theService is missing value then error "No Messages service available."
-                set theChat to make new text chat with properties {service:theService, participants:{theHandle}}
-                send theText to theChat
-            end tell
-        end run
-        """
+        guard let url = URL(string: apiUrl) else {
+            print("❌ Invalid API URL")
+            return
+        }
 
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/usr/bin/osascript")
-        task.arguments = ["-l", "AppleScript", "-e", script, "--", handle, text]
-        let pipe = Pipe()
-        task.standardError = pipe
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(adminToken)", forHTTPHeaderField: "Authorization")
+
         do {
-            try task.run()
-            task.waitUntilExit()
+            let (data, response) = try await URLSession.shared.data(for: request)
+
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                print("❌ Failed to fetch bookings: HTTP \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+                return
+            }
+
+            let decoder = JSONDecoder()
+            let result = try decoder.decode(BookingsResponse.self, from: data)
+
+            await MainActor.run {
+                self.upcomingBookings = result.bookings
+                print("✅ Fetched \(result.bookings.count) bookings")
+            }
         } catch {
-            return false
+            print("❌ Error fetching bookings: \(error.localizedDescription)")
         }
-        return task.terminationStatus == 0
+    }
+
+    // Response structure for /api/bookings
+    private struct BookingsResponse: Codable {
+        let success: Bool
+        let bookings: [Booking]
+        let count: Int
+    }
+
+    // MARK: - Import/Export
+
+    func exportClients() throws -> URL {
+        let tempDir = FileManager.default.temporaryDirectory
+        let filename = "forceiq-clients-\(Date().timeIntervalSince1970).json"
+        let url = tempDir.appendingPathComponent(filename)
+
+        try storage.exportClients(to: url)
+        return url
+    }
+
+    func importClients(from url: URL) throws {
+        let importedClients = try storage.importClients(from: url)
+
+        for client in importedClients {
+            if !clients.contains(where: { $0.id == client.id }) {
+                clients.append(client)
+            }
+        }
+
+        storage.saveClients(clients)
     }
 }
-
