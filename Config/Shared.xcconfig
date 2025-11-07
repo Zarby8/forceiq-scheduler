@@ -22,6 +22,7 @@ MACOSX_DEPLOYMENT_TARGET = 14.0
 // ==========================================
 GENERATE_INFOPLIST_FILE = YES
 INFOPLIST_KEY_NSAppleEventsUsageDescription = Used to send weekly scheduling messages via Messages.
+INFOPLIST_KEY_NSContactsUsageDescription = ForceIQ Scheduler needs access to your contacts to import client information.
 
 // ==========================================
 // Code Signing & Distribution

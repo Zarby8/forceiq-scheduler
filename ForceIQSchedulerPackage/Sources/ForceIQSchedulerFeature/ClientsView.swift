@@ -124,8 +124,6 @@ struct ClientsView: View {
     }
 
     private func importContacts(_ contacts: [CNContact]) {
-        let store = CNContactStore()
-
         for contact in contacts {
             // Get primary phone number
             let phoneNumber = contact.phoneNumbers.first?.value.stringValue ?? ""
@@ -415,22 +413,13 @@ struct FormField: View {
 struct ContactsPickerView: View {
     @Environment(\.dismiss) var dismiss
     let onImport: ([CNContact]) -> Void
-    
-    @State private var contacts: [CNContact] = []
-    @State private var selectedContacts: Set<String> = []
-    @State private var searchText = ""
+
+    @State private var groups: [CNGroup] = []
+    @State private var selectedGroups: Set<String> = []
     @State private var isLoading = true
     @State private var errorMessage = ""
+    @State private var contactCounts: [String: Int] = [:]
     
-    var filteredContacts: [CNContact] {
-        if searchText.isEmpty {
-            return contacts
-        }
-        return contacts.filter {
-            "\($0.givenName) \($0.familyName)".localizedCaseInsensitiveContains(searchText) ||
-            $0.emailAddresses.contains { ($0.value as String).localizedCaseInsensitiveContains(searchText) }
-        }
-    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -456,45 +445,48 @@ struct ContactsPickerView: View {
                     .padding()
             }
             
-            // Search
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(ForceIQColors.textMuted)
-                
-                TextField("Search contacts...", text: $searchText)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 14, weight: .regular, design: .monospaced))
-                    .foregroundColor(ForceIQColors.textPrimary)
-            }
-            .padding(12)
-            .background(ForceIQColors.iceCharcoalDark)
-            .cornerRadius(6)
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(ForceIQColors.forceRed.opacity(0.3), lineWidth: 1)
-            )
-            .padding(.horizontal, 24)
-            .padding(.vertical, 12)
-            
-            // Contacts List
+            Text("Select contact groups to import:")
+                .font(.system(size: 12, weight: .medium, design: .default))
+                .foregroundColor(ForceIQColors.textSecondary)
+                .padding(.horizontal, 24)
+
+            // Groups List
             if isLoading {
                 Spacer()
                 ProgressView()
                     .scaleEffect(1.5)
                     .tint(ForceIQColors.electricGreen)
                 Spacer()
+            } else if groups.isEmpty {
+                Spacer()
+                VStack(spacing: 12) {
+                    Image(systemName: "person.3.slash")
+                        .font(.system(size: 48))
+                        .foregroundColor(ForceIQColors.textMuted)
+
+                    Text("NO CONTACT GROUPS")
+                        .font(.system(size: 12, weight: .bold, design: .default))
+                        .tracking(1.5)
+                        .foregroundColor(ForceIQColors.textMuted)
+
+                    Text("Create groups in Contacts app")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundColor(ForceIQColors.textMuted.opacity(0.7))
+                }
+                Spacer()
             } else {
                 ScrollView {
                     LazyVStack(spacing: 12) {
-                        ForEach(filteredContacts, id: \.identifier) { contact in
-                            ContactRow(
-                                contact: contact,
-                                isSelected: selectedContacts.contains(contact.identifier)
+                        ForEach(groups, id: \.identifier) { group in
+                            GroupRow(
+                                group: group,
+                                contactCount: contactCounts[group.identifier] ?? 0,
+                                isSelected: selectedGroups.contains(group.identifier)
                             ) {
-                                if selectedContacts.contains(contact.identifier) {
-                                    selectedContacts.remove(contact.identifier)
+                                if selectedGroups.contains(group.identifier) {
+                                    selectedGroups.remove(group.identifier)
                                 } else {
-                                    selectedContacts.insert(contact.identifier)
+                                    selectedGroups.insert(group.identifier)
                                 }
                             }
                         }
@@ -502,25 +494,26 @@ struct ContactsPickerView: View {
                     .padding(24)
                 }
             }
-            
+
             // Footer
             HStack {
-                Text("\(selectedContacts.count) SELECTED")
+                let totalContacts = selectedGroups.compactMap { contactCounts[$0] }.reduce(0, +)
+                Text("\(selectedGroups.count) GROUPS · \(totalContacts) CONTACTS")
                     .font(.system(size: 11, weight: .bold, design: .monospaced))
                     .foregroundColor(ForceIQColors.textMuted)
-                
+
                 Spacer()
-                
+
                 Button(action: { dismiss() }) {
                     Text("Cancel")
                 }
                 .buttonStyle(ForceIQButtonStyle(type: .secondary))
-                
-                Button(action: importSelected) {
-                    Text("Import \(selectedContacts.count) Contacts")
+
+                Button(action: importSelectedGroups) {
+                    Text("Import Groups")
                 }
                 .buttonStyle(ForceIQButtonStyle(type: .primary))
-                .disabled(selectedContacts.isEmpty)
+                .disabled(selectedGroups.isEmpty)
             }
             .padding(24)
             .background(ForceIQColors.iceCharcoal)
@@ -528,61 +521,90 @@ struct ContactsPickerView: View {
         .frame(width: 600, height: 700)
         .background(ForceIQColors.iceCharcoal)
         .task {
-            await loadContacts()
+            await loadGroups()
         }
     }
     
-    private func loadContacts() async {
+    private func loadGroups() async {
         let store = CNContactStore()
-        
+
         do {
             // Request access
             let granted = try await store.requestAccess(for: .contacts)
-            
+
             guard granted else {
                 errorMessage = "❌ Contacts access denied. Please enable in System Settings."
                 isLoading = false
                 return
             }
-            
-            // Fetch contacts
-            let keys = [CNContactGivenNameKey, CNContactFamilyNameKey, CNContactPhoneNumbersKey, CNContactEmailAddressesKey] as [CNKeyDescriptor]
-            let request = CNContactFetchRequest(keysToFetch: keys)
-            
-            var fetchedContacts: [CNContact] = []
-            try store.enumerateContacts(with: request) { contact, _ in
-                // Only include contacts with phone or email
-                if !contact.phoneNumbers.isEmpty || !contact.emailAddresses.isEmpty {
-                    fetchedContacts.append(contact)
-                }
+
+            // Fetch all groups
+            let fetchedGroups = try store.groups(matching: nil)
+
+            // Count contacts in each group
+            var counts: [String: Int] = [:]
+            let keys = [CNContactGivenNameKey, CNContactFamilyNameKey] as [CNKeyDescriptor]
+
+            for group in fetchedGroups {
+                let predicate = CNContact.predicateForContactsInGroup(withIdentifier: group.identifier)
+                let contacts = try store.unifiedContacts(matching: predicate, keysToFetch: keys)
+                counts[group.identifier] = contacts.count
             }
-            
+
             await MainActor.run {
-                self.contacts = fetchedContacts.sorted { a, b in
-                    "\(a.givenName) \(a.familyName)" < "\(b.givenName) \(b.familyName)"
-                }
+                self.groups = fetchedGroups.sorted { $0.name < $1.name }
+                self.contactCounts = counts
                 isLoading = false
             }
         } catch {
             await MainActor.run {
-                errorMessage = "❌ Failed to load contacts: \(error.localizedDescription)"
+                errorMessage = "❌ Failed to load groups: \(error.localizedDescription)"
                 isLoading = false
             }
         }
     }
     
-    private func importSelected() {
-        let selectedContactObjects = contacts.filter { selectedContacts.contains($0.identifier) }
-        onImport(selectedContactObjects)
+    private func importSelectedGroups() {
+        let store = CNContactStore()
+        var allContacts: [CNContact] = []
+
+        let keys = [CNContactGivenNameKey, CNContactFamilyNameKey, CNContactPhoneNumbersKey, CNContactEmailAddressesKey] as [CNKeyDescriptor]
+
+        for groupId in selectedGroups {
+            do {
+                let predicate = CNContact.predicateForContactsInGroup(withIdentifier: groupId)
+                let contacts = try store.unifiedContacts(matching: predicate, keysToFetch: keys)
+
+                // Only include contacts with phone or email
+                let validContacts = contacts.filter { !$0.phoneNumbers.isEmpty || !$0.emailAddresses.isEmpty }
+                allContacts.append(contentsOf: validContacts)
+            } catch {
+                print("❌ Failed to fetch contacts for group \(groupId): \(error.localizedDescription)")
+            }
+        }
+
+        // Remove duplicates by identifier
+        var uniqueContacts: [CNContact] = []
+        var seenIds = Set<String>()
+
+        for contact in allContacts {
+            if !seenIds.contains(contact.identifier) {
+                uniqueContacts.append(contact)
+                seenIds.insert(contact.identifier)
+            }
+        }
+
+        onImport(uniqueContacts)
         dismiss()
     }
 }
 
-struct ContactRow: View {
-    let contact: CNContact
+struct GroupRow: View {
+    let group: CNGroup
+    let contactCount: Int
     let isSelected: Bool
     let onToggle: () -> Void
-    
+
     var body: some View {
         Button(action: onToggle) {
             HStack(spacing: 16) {
@@ -591,15 +613,15 @@ struct ContactRow: View {
                     RoundedRectangle(cornerRadius: 4)
                         .stroke(isSelected ? ForceIQColors.electricGreen : ForceIQColors.forceRed.opacity(0.3), lineWidth: 2)
                         .frame(width: 24, height: 24)
-                    
+
                     if isSelected {
                         Image(systemName: "checkmark")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundColor(ForceIQColors.electricGreen)
                     }
                 }
-                
-                // Avatar
+
+                // Group Icon
                 Circle()
                     .fill(
                         LinearGradient(
@@ -610,29 +632,22 @@ struct ContactRow: View {
                     )
                     .frame(width: 40, height: 40)
                     .overlay(
-                        Text(String(contact.givenName.prefix(1) + contact.familyName.prefix(1)).uppercased())
-                            .font(.system(size: 14, weight: .black, design: .default))
+                        Image(systemName: "person.3.fill")
+                            .font(.system(size: 16, weight: .bold))
                             .foregroundColor(ForceIQColors.black)
                     )
-                
+
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(contact.givenName) \(contact.familyName)")
+                    Text(group.name)
                         .font(.system(size: 14, weight: .bold, design: .default))
                         .foregroundColor(ForceIQColors.textPrimary)
-                    
-                    if let email = contact.emailAddresses.first?.value as? String {
-                        Text(email)
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundColor(ForceIQColors.textSecondary)
-                    }
-                    
-                    if let phone = contact.phoneNumbers.first?.value.stringValue {
-                        Text(phone)
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundColor(ForceIQColors.textMuted)
-                    }
+
+                    Text("\(contactCount) CONTACTS")
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .tracking(0.5)
+                        .foregroundColor(ForceIQColors.highlightYellow)
                 }
-                
+
                 Spacer()
             }
             .padding(16)
