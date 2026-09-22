@@ -1,0 +1,14 @@
+{
+  "model": "jev-1.13.0",
+  "thresholds": { "auto": 0.85, "review": 0.6 },
+  "usage": { "input_tokens": 1110, "output_tokens": 121 },
+  "latency_ms": 344,
+  "answers": {
+    "task_success": { "type": "noul", "noul": 0.25, "gate": "review", "certainty": 0.75, "verdict": "no" },
+    "reusable_correction": { "type": "noul", "noul": 0.76, "gate": "review", "certainty": 0.76, "verdict": "yes" },
+    "evidence_supported": { "type": "noul", "noul": 0.7, "gate": "review", "certainty": 0.7, "verdict": "yes" },
+    "auto_promote": { "type": "noul", "noul": 0.04, "gate": "auto", "certainty": 0.96, "verdict": "no" },
+    "redaction_holds": { "type": "noul", "noul": 0.88, "gate": "auto", "certainty": 0.88, "verdict": "yes" },
+    "logs_alone_sufficient": { "type": "noul", "noul": 0.08, "gate": "auto", "certainty": 0.92, "verdict": "no" }
+  }
+}

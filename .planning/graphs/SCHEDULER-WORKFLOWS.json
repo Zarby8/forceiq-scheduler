@@ -1,0 +1,21 @@
+{
+  "schema": "forceiq.scheduler.workflows.v1",
+  "workflows": [
+    {
+      "id": "book-session",
+      "title": "Book a training session",
+      "node": "booking.page",
+      "palette": false,
+      "path": ["booking.page", "booking.api"]
+    },
+    {
+      "id": "beacon-memory-review",
+      "title": "Review a Beacon memory candidate",
+      "node": "beacon.memory",
+      "surface": "engineering",
+      "palette": false,
+      "auto_promote": false,
+      "command": "node scripts/beacon/review.mjs score --trace beacon/fixtures/safe-trace.json --jev <live-jev-1.13.0.json>"
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "schema_version": "forceiq.beacon.review.v1",
+  "project_id": "Zarby8/forceiq-scheduler",
+  "evaluator_model": "jev-1.13.0",
+  "rubric_version": "beacon.learning.rubric.v1",
+  "score": 0.57,
+  "questions": [
+    {
+      "id": "task_success",
+      "prompt": "Did the trace complete the user's engineering task successfully?",
+      "probability": 0.25
+    },
+    {
+      "id": "reusable_correction",
+      "prompt": "Does the trace contain a correction or debugging pattern that future agents should reuse?",
+      "probability": 0.76
+    },
+    {
+      "id": "evidence_supported",
+      "prompt": "Is the reusable lesson supported by concrete events in the trace?",
+      "probability": 0.7
+    }
+  ],
+  "projection": {
+    "synthetic": true,
+    "trace_id": "session:cursor:scheduler-beacon-proof",
+    "title": "correction: pin Beacon memory review to jev-1.13.0 and do not auto-promote",
+    "harness": "cursor",
+    "repository": "https://github.com/Zarby8/forceiq-scheduler",
+    "events": [
+      {
+        "number": 1,
+        "type": "prompt",
+        "action": "prompt.submitted",
+        "summary": "Add repo-scoped Beacon memory for this scheduler only.",
+        "content": "Pin the evaluator to jev-1.13.0. Keep candidates in review. Refuse transcripts from any other repository."
+      },
+      {
+        "number": 2,
+        "type": "tool",
+        "action": "tool.completed",
+        "summary": "Capture hook redacts before the local log and before the upstream hook.",
+        "content": "The hook writes a redacted JSONL record under the gitignored .beacon directory and does not call the evaluator."
+      },
+      {
+        "number": 3,
+        "type": "correction",
+        "action": "correction.recorded",
+        "summary": "A score at or above 0.60 creates a candidate. Approval is a separate reviewed command.",
+        "content": "Future agents in this repository reuse that rule on every harness. This trace was not approved."
+      }
+    ]
+  },
+  "jev_gate": null,
+  "jev_gate_applied": false,
+  "devils_advocate": {
+    "auto_promote": 0.04,
+    "redaction_holds": 0.88,
+    "logs_alone_sufficient": 0.08,
+    "applied": false
+  },
+  "promoted": false,
+  "approve_invoked": false,
+  "candidate": null,
+  "product_truth": {
+    "status": "VERIFIED",
+    "named_consumer": "Chris",
+    "event_id": "rmb750jk89edh2ojgam7e34em0",
+    "html_link": "https://www.google.com/calendar/event?eid=cm1iNzUwams4OWVkaDJvamdhbTdlMzRlbTAgY29hY2h6YXJieUBt",
+    "start": "2026-09-22T17:30:00-04:00",
+    "end": "2026-09-22T17:45:00-04:00",
+    "logs_or_api_alone_sufficient": false,
+    "calendar_id": "coachzarby@gmail.com",
+    "attendee": "chris@forcehockeyiq.com",
+    "organizer_is_consumer": true,
+    "browser_ui": "signed_out"
+  },
+  "status": "below_threshold",
+  "reason": "score_below_threshold",
+  "capture": {
+    "kept": 1,
+    "dropped": 1,
+    "drop_reason": "cross_repo_transcript",
+    "sensitive_residue": false
+  },
+  "upstream_hook": {
+    "checked": true,
+    "exit_code": 0,
+    "sensitive_residue": false
+  }
+}

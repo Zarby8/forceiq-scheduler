@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh scripts/beacon/hook.sh --harness codex --event session-start || true",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
