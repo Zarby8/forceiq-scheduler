@@ -70,6 +70,10 @@ This is a three-part scheduling system for ForceIQ hockey training:
 - Product → Archive → Distribute → Copy App
 - Recipient may need Control-click → Open to bypass Gatekeeper
 
+## Beacon memory
+
+Repo-scoped cross-harness memory is `beacon.memory` in the atlas. Read `docs/BEACON.md` and `beacon/policy.json`. Hooks redact and do not call Jev. Score only with live `jev-1.13.0`, and do not auto-promote. The booking page files are `index.html`, `app.js`, and `styles.css` at the repo root.
+
 ## Testing End-to-End
 
 1. Add test client in macOS app with your handle/email

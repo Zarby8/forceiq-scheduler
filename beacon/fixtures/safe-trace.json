@@ -1,0 +1,30 @@
+{
+  "synthetic": true,
+  "trace_id": "session:cursor:scheduler-beacon-proof",
+  "title": "correction: pin Beacon memory review to jev-1.13.0 and do not auto-promote",
+  "harness": "cursor",
+  "repository": "https://github.com/Zarby8/forceiq-scheduler",
+  "events": [
+    {
+      "number": 1,
+      "type": "prompt",
+      "action": "prompt.submitted",
+      "summary": "Add repo-scoped Beacon memory for this scheduler only.",
+      "content": "Pin the evaluator to jev-1.13.0. Keep candidates in review. Refuse transcripts from any other repository."
+    },
+    {
+      "number": 2,
+      "type": "tool",
+      "action": "tool.completed",
+      "summary": "Capture hook redacts before the local log and before the upstream hook.",
+      "content": "The hook writes a redacted JSONL record under the gitignored .beacon directory and does not call the evaluator."
+    },
+    {
+      "number": 3,
+      "type": "correction",
+      "action": "correction.recorded",
+      "summary": "A score at or above 0.60 creates a candidate. Approval is a separate reviewed command.",
+      "content": "Future agents in this repository reuse that rule on every harness. This trace was not approved."
+    }
+  ]
+}

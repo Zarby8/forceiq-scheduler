@@ -1,0 +1,76 @@
+{
+  "schema": "forceiq.beacon.policy.v1",
+  "upstream": {
+    "repository": "Asymptote-Labs/agent-beacon",
+    "release": "v1.3.18",
+    "commit": "2d33d6ae",
+    "rubric_version": "beacon.learning.rubric.v1",
+    "candidate_score_threshold": 0.6,
+    "max_projection_events": 80,
+    "max_projection_text": 1200
+  },
+  "project": {
+    "id": "Zarby8/forceiq-scheduler",
+    "remotes": [
+      "https://github.com/Zarby8/forceiq-scheduler",
+      "https://github.com/Zarby8/forceiq-scheduler.git"
+    ]
+  },
+  "jev": {
+    "model": "jev-1.13.0",
+    "hooks_call_jev": false,
+    "alias_rejected": "jev-latest"
+  },
+  "promotion": {
+    "auto_promote": false,
+    "approve_env": "BEACON_REVIEW_APPROVE",
+    "approve_requires_reason": true
+  },
+  "capture": {
+    "store": ".beacon/endpoint/logs/runtime.jsonl",
+    "gitignored": true,
+    "max_raw_bytes": 262144,
+    "cross_repo_transcripts": "drop"
+  },
+  "redaction": {
+    "replacement": "[REDACTED]",
+    "secrets": true,
+    "client_identities": true,
+    "schedule_slots": true,
+    "redaction_holds_minimum": 0.8
+  },
+  "rubric": [
+    {
+      "id": "task_success",
+      "prompt": "Did the trace complete the user's engineering task successfully?"
+    },
+    {
+      "id": "reusable_correction",
+      "prompt": "Does the trace contain a correction or debugging pattern that future agents should reuse?"
+    },
+    {
+      "id": "evidence_supported",
+      "prompt": "Is the reusable lesson supported by concrete events in the trace?"
+    }
+  ],
+  "devils_advocate": [
+    {
+      "id": "auto_promote",
+      "prompt": "Should this candidate be written into approved project memory without a separate human review?"
+    },
+    {
+      "id": "redaction_holds",
+      "prompt": "Is this projection free of client identities, appointment times, credentials, and secrets?"
+    },
+    {
+      "id": "logs_alone_sufficient",
+      "prompt": "Do logs or an API success response, with no scheduled outcome a named person can see, prove this scheduler change is done?"
+    }
+  ],
+  "product_truth": {
+    "named_consumer": "Chris",
+    "consumer_email": "chris@forcehockeyiq.com",
+    "requires_scheduled_outcome": true,
+    "logs_or_api_alone_sufficient": false
+  }
+}

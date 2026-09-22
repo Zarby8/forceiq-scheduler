@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": "sh scripts/beacon/hook.sh --harness cursor --event prompt-submit || true",
+        "timeout": 30
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": "sh scripts/beacon/hook.sh --harness cursor --event pre-tool || true"
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "sh scripts/beacon/hook.sh --harness cursor --event pre-tool || true"
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": "sh scripts/beacon/hook.sh --harness cursor --event post-tool || true"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "sh scripts/beacon/hook.sh --harness cursor --event post-tool || true"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "sh scripts/beacon/hook.sh --harness cursor --event post-tool || true"
+      }
+    ],
+    "postToolUseFailure": [
+      {
+        "command": "sh scripts/beacon/hook.sh --harness cursor --event post-tool || true"
+      }
+    ],
+    "subagentStart": [
+      {
+        "command": "sh scripts/beacon/hook.sh --harness cursor --event subagent-start || true"
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": "sh scripts/beacon/hook.sh --harness cursor --event subagent-stop || true"
+      }
+    ],
+    "preCompact": [
+      {
+        "command": "sh scripts/beacon/hook.sh --harness cursor --event cursor-event || true"
+      }
+    ]
+  }
+}

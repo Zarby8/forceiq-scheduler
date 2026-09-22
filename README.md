@@ -102,6 +102,10 @@ All existing UI elements are preserved:
 - ✅ Mobile responsive design
 - ✅ Form validation and error handling
 
+## Agent memory
+
+Cross-harness agent memory is documented in [docs/BEACON.md](docs/BEACON.md). Capture redacts client, schedule, and secret text. Review uses live Jev `jev-1.13.0` and does not auto-promote.
+
 ---
 
 **Built with modern 2025 tech stack for maximum simplicity and performance** 🚀
